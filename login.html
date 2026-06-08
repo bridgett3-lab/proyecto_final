@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Chrome">
+    <meta name="description" content="Inicio de sesión del Centro Veterinario Pet-Alexander Von Humboldt">
+    <meta name="author" content="Pet-Alexander Von Humboldt">
+    <title>Login - PET-Alexander Von Humboldt</title>
+    <link rel="stylesheet" type="text/css" href="css/header.css">
+    <link rel="stylesheet" type="text/css" href="css/auth.css">
+    <link rel="stylesheet" type="text/css" href="css/footer.css">
+</head>
+<body data-page="login">
+  <header>
+    <div class="header_content">
+       <div class="img-logo">
+            <img src="img/logo.png" class="circular-logo" alt="Logo">
+        </div>
+        <div class="logo">
+            <h1 class="roboto-thin"><b>PET-Alexander Von Humboldt</b> Centro Veterinario</h1>
+        </div>
+        <div class="menu">
+                <nav>
+                    <ul>
+                        <li><a href="index.html">Inicio</a></li>
+                        <li><a href="servicio.html">Servicio</a></li>
+                        <li id="nav-crud"><a href="crud.html">Crud</a></li>
+                        <li id="nav-auth"><a href="login.html">Login</a></li>
+                    </ul>
+            </nav>
+        </div>
+    </div>
+  </header>
+
+  <main class="section-auth">
+    <section class="login-box">
+      <h1>Acceso al Centro Veterinario</h1>
+      <p>Selecciona tu perfil e inicia sesión o regístrate si aún no tienes cuenta.</p>
+      <div class="role-grid">
+        <article class="role-card" id="role-client">
+          <h2>Cliente</h2>
+          <p>Solicita servicios para tu mascota, cita médica, peluquería, guardería y más.</p>
+        </article>
+        <article class="role-card" id="role-admin">
+          <h2>Administrador</h2>
+          <p>Accede al CRUD y revisa todas las solicitudes de pacientes y servicios.</p>
+        </article>
+        <article class="role-card" id="role-secretary">
+          <h2>Secretario</h2>
+          <p>Accede al stock de medicamentos con contraseña autorizada.</p>
+        </article>
+        <article class="role-card" id="role-doctor">
+          <h2>Médico</h2>
+          <p>Consulta historiales médicos con la contraseña correspondiente.</p>
+        </article>
+        <article class="role-card" id="role-register">
+          <h2>Sin cuenta</h2>
+          <p>Regístrate rápido para comenzar a usar el servicio.</p>
+        </article>
+      </div>
+      <div class="access-panel hidden" id="login-panel">
+        <h3>Ingreso de usuario</h3>
+        <form id="login-form">
+          <div class="form-row">
+            <label for="login-username">Usuario</label>
+            <input type="text" id="login-username" name="login-username" placeholder="Nombre de usuario" required>
+          </div>
+          <div class="form-row">
+            <label for="login-password">Contraseña</label>
+            <input type="password" id="login-password" name="login-password" placeholder="Contraseña" required>
+          </div>
+          <button class="primary" type="submit">Iniciar sesión</button>
+          <div id="login-message" class="message"></div>
+        </form>
+      </div>
+
+      <div class="access-panel hidden" id="secretary-password-panel">
+        <h3>Ingreso restringido</h3>
+        <form id="secretary-password-form">
+          <div class="form-row">
+            <label for="secretary-password">Contraseña de secretario</label>
+            <input type="password" id="secretary-password" name="secretary-password" placeholder="Contraseña" required>
+          </div>
+          <button class="primary" type="submit">Ingresar</button>
+          <div id="secretary-message" class="message"></div>
+        </form>
+      </div>
+
+      <div class="access-panel hidden" id="doctor-password-panel">
+        <h3>Acceso a historiales</h3>
+        <form id="doctor-password-form">
+          <div class="form-row">
+            <label for="doctor-password">Contraseña de historiales</label>
+            <input type="password" id="doctor-password" name="doctor-password" placeholder="Contraseña" required>
+          </div>
+          <button class="primary" type="submit">Ingresar</button>
+          <div id="doctor-password-message" class="message"></div>
+        </form>
+      </div>
+
+      <div class="access-panel hidden" id="register-panel">
+        <h3>Registro de usuario</h3>
+        <form id="register-form">
+          <div class="form-row">
+            <label for="register-username">Nombre de usuario</label>
+            <input type="text" id="register-username" name="register-username" placeholder="Escribe tu usuario" required>
+          </div>
+          <div class="form-row">
+            <label for="register-password">Contraseña</label>
+            <input type="password" id="register-password" name="register-password" placeholder="Escribe tu contraseña" required>
+          </div>
+          <div class="form-row">
+            <label for="register-role">Tipo de cuenta</label>
+            <select id="register-role" name="register-role" required>
+              <option value="Cliente">Cliente</option>
+              <option value="Secretario">Secretario</option>
+              <option value="Doctor">Doctor</option>
+            </select>
+          </div>
+          <button class="primary" type="submit">Registrar cuenta</button>
+          <div id="register-message" class="message"></div>
+        </form>
+      </div>
+
+      <div class="login-hero">
+        <img src="img/servicios.jpg" alt="Mascotas en la clínica veterinaria">
+      </div>
+
+      <div class="access-panel hidden" id="stock-panel">
+        <h3>Stock de Medicamentos</h3>
+        <p>Revisa cantidades disponibles y vencimientos de medicamentos en el centro.</p>
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>Medicamento</th>
+              <th>Cantidad</th>
+              <th>Vence</th>
+            </tr>
+          </thead>
+          <tbody id="stock-table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="access-panel hidden" id="doctor-panel">
+        <h3>Historial Médico</h3>
+        <p>Selecciona el nombre de la mascota para abrir su historial de solicitudes.</p>
+        <div class="form-row">
+          <label for="doctor-pet-select">Mascota</label>
+          <select id="doctor-pet-select">
+            <option value="">Selecciona una mascota</option>
+          </select>
+        </div>
+        <div id="doctor-history-message" class="message"></div>
+        <div class="table-panel">
+          <table class="table-full">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Servicio / Detalle</th>
+                <th>Profesional</th>
+                <th>Fecha</th>
+                <th>Registrado</th>
+              </tr>
+            </thead>
+            <tbody id="doctor-history-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="content-footer">
+    <div class="logo-footer">
+      <h1><b>PET-Alexander Von Humboldt</b> Centro Veterinario</h1>
+    </div>
+    <div class="sub-content">
+      <div class="correo-footer">
+        <h4>correo: petalexandervonhumboldt@gmail.com</h4>
+      </div>
+      <div class="redes-footer">
+        <a href="#"> <img src="img/facebook.png" alt="facebook"></a>
+        <a href="#"> <img src="img/instagram.png" alt="instagram"></a>
+      </div>
+      <div class="telefono-footer">
+        <h4>Telefonos: +57 317 386 3343 - +57 322 437 7925</h4>
+      </div>
+    </div>
+  </footer>
+  <a class="whatsapp-button" href="https://wa.me/573173863343" target="_blank" rel="noreferrer">
+    <img src="wasa.png" alt="WhatsApp">
+  </a>
+  <script src="auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Chrome">
+    <meta name="description" content="Página web del Centro Veterinario Pet-Alexander Von Humboldt">
+    <meta name="keywords" content="Medicina, Mascota, Concentrados, snacks">
+    <meta name="author" content="Salome Ramirez, Bridgette Torro, sergio David Areiza, Juan esteban Ospina, Juan Estevan caicedo">
+    <meta name="application-name" content="PET-Alexander Von Humboldt">
+    <meta name="generator" content="VSCode">
+    <title>PET-Alexander Von Humboldt</title>
+    <link rel="stylesheet" type="text/css" href="css/header.css">
+    <link rel="stylesheet" type="text/css" href="css/cuerpo.css">
+    <link rel="stylesheet" type="text/css" href="css/footer.css">
+    <link rel="stylesheet" type="text/css" href="css/card.css">
+    <link rel="stylesheet" type="text/css" href="css/auth.css">
+    <!--Fuente de Google-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+</head>
+<body data-page="home">
+  <header>
+    <div class="header_content">
+      <div class="img-logo">
+      <img src="img/logo.png" class="circular-logo" alt="Logo">
+      </div>
+      <div class="logo">
+        <h1 class="roboto-thin"><b>PET-Alexander Von Humboldt</b> Centro Veterinario</h1>
+      </div>
+      <div class="menu">
+        <nav>
+          <ul>
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="servicio.html">Servicio</a></li>
+            <li id="nav-crud"><a href="crud.html">Crud</a></li>
+            <li id="nav-auth"><a href="login.html">Login</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="welcome-hero foto-portada">
+    <article class="info-portada welcome-message">
+      <p id="home-user" class="home-user"></p>
+      <h1>Bienvenidos a la Veterinaria</h1>
+      <h2>PET-Alexander Von Humboldt</h2>
+    </article>
+    <section class="home-actions">
+      <p id="home-welcome-text" class="home-welcome-text">¿Qué necesitas hoy?</p>
+      <div class="home-buttons">
+        <button class="primary" id="home-login-btn" type="button">Mi cuenta</button>
+        <button class="primary" id="home-service-btn" type="button">Servicios</button>
+      </div>
+    </section>
+
+    <section class="access-panel hidden" id="account-panel">
+      <h2>Mi cuenta</h2>
+      <div class="account-summary">
+        <div class="form-row">
+          <label>Dueño</label>
+          <p id="account-owner-name">-</p>
+        </div>
+        <div class="form-row">
+          <label>Rol</label>
+          <p id="account-user-role">-</p>
+        </div>
+        <div class="form-row">
+          <label>Mascotas registradas</label>
+          <ul id="account-pets-list"></ul>
+        </div>
+      </div>
+      <div class="account-metrics-grid">
+        <div class="account-metric">
+          <h3 id="account-total-appointments">0</h3>
+          <p>Citas programadas</p>
+        </div>
+        <div class="account-metric">
+          <h3 id="account-total-services">0</h3>
+          <p>Servicios solicitados</p>
+        </div>
+        <div class="account-metric">
+          <h3 id="account-total-medications">0</h3>
+          <p>Pedidos de medicamentos</p>
+        </div>
+      </div>
+      <div id="doctor-account-details" class="doctor-account-details hidden">
+        <h3>Citas y servicios asignados</h3>
+        <div class="doctor-request-summary">
+          <p>Total citas asignadas: <strong id="doctor-total-assigned">0</strong></p>
+          <p>Total servicios asignados: <strong id="doctor-total-services">0</strong></p>
+          <p>Solicitudes pendientes: <strong id="doctor-pending-count">0</strong></p>
+        </div>
+        <div class="table-panel doctor-appointments-table">
+          <table class="table-full">
+            <thead>
+              <tr>
+                <th>Paciente</th>
+                <th>Servicio</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="doctor-account-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="form-row" id="client-account-last-request-row">
+        <label>Última solicitud enviada</label>
+        <p id="account-last-request">-</p>
+      </div>
+      <button class="secondary" type="button" id="account-close-btn">Cerrar</button>
+    </section>
+  </main>
+
+  <script src="auth.js"></script>
+</body>
+</html>

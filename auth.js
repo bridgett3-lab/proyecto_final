@@ -1,0 +1,1707 @@
+// ==========================================
+// 1. CONSTANTES Y CLAVES DE STORAGE
+// ==========================================
+const STORAGE_USERS_KEY = 'petHumboldtUsers';
+const STORAGE_PATIENTS_KEY = 'petHumboldtPatients';
+const STORAGE_STOCK_KEY = 'petHumboldtStock';
+const STORAGE_CLIENT_REQUESTS_KEY = 'petHumboldtClientRequests';
+const SESSION_USER_KEY = 'petHumboldtSession';
+
+const defaultUsers = [
+  { username: 'admin', password: 'admin123', role: 'Administrador' },
+  { username: 'cliente', password: 'cliente123', role: 'Cliente' },
+  { username: 'doctor', password: 'doctor123', role: 'Doctor' }
+];
+
+const defaultStock = [
+  { id: 'stock-1', name: 'Antibiótico Veterinario', quantity: 24, expiry: '2026-11-15' },
+  { id: 'stock-2', name: 'Vacuna Quíntuple', quantity: 14, expiry: '2027-01-10' },
+  { id: 'stock-3', name: 'Suero Oral', quantity: 8, expiry: '2026-08-30' }
+];
+
+const SECRETARY_ACCESS_PASSWORD = 'secretaria2026';
+const ADMIN_ACCESS_PASSWORD = 'admin123';
+const CRUD_ACCESS_KEY = 'petHumboldtCrudAccess';
+const DOCTOR_ACCESS_PASSWORD = 'historial2026';
+const SERVICE_DOCTORS = ['Dr. Alejandro', 'Dra. Camila', 'Dr. Andrés'];
+const SERVICE_LABELS = {
+  'Cita médica': 'Motivo de la cita',
+  'Peluquería': 'Detalle del corte o baño',
+  'Radiografías': 'Motivo de la radiografía',
+  'Guardería canina': 'Detalle de la estadía',
+  'Ecografías': 'Motivo del estudio',
+  'Medicina': 'Detalle del servicio',
+  'Medicamento': 'Medicamento y dosis'
+};
+
+// ==========================================
+// 2. MANEJO DE BASE DE DATOS (LOCALSTORAGE)
+// ==========================================
+function ensureDefaultUsers() {
+  if (!localStorage.getItem(STORAGE_USERS_KEY)) {
+    localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(defaultUsers));
+  }
+}
+
+function getUsers() {
+  ensureDefaultUsers();
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_USERS_KEY)) || defaultUsers;
+  } catch (error) {
+    localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(defaultUsers));
+    return defaultUsers;
+  }
+}
+
+function getSessionUser() {
+  const raw = sessionStorage.getItem(SESSION_USER_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function setSessionUser(user) {
+  sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
+}
+
+function clearSessionUser() {
+  sessionStorage.removeItem(SESSION_USER_KEY);
+}
+
+function ensureDefaultStock() {
+  if (!localStorage.getItem(STORAGE_STOCK_KEY)) {
+    localStorage.setItem(STORAGE_STOCK_KEY, JSON.stringify(defaultStock));
+  }
+}
+
+function getStock() {
+  ensureDefaultStock();
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_STOCK_KEY)) || defaultStock;
+  } catch (error) {
+    localStorage.setItem(STORAGE_STOCK_KEY, JSON.stringify(defaultStock));
+    return defaultStock;
+  }
+}
+
+function saveStock(stock) {
+  localStorage.setItem(STORAGE_STOCK_KEY, JSON.stringify(stock));
+}
+
+function getClientRequests() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_CLIENT_REQUESTS_KEY)) || [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveClientRequests(requests) {
+  localStorage.setItem(STORAGE_CLIENT_REQUESTS_KEY, JSON.stringify(requests));
+}
+
+function getPatients() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_PATIENTS_KEY)) || [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function savePatients(patients) {
+  localStorage.setItem(STORAGE_PATIENTS_KEY, JSON.stringify(patients));
+}
+
+function hasCrudAccess() {
+  const sessionAccess = sessionStorage.getItem(CRUD_ACCESS_KEY) === 'true';
+  const user = getSessionUser();
+  return sessionAccess || (user && user.role === 'Administrador');
+}
+
+function setCrudAccess() {
+  sessionStorage.setItem(CRUD_ACCESS_KEY, 'true');
+}
+
+function requireAdminAccess() {
+  return hasCrudAccess();
+}
+
+// ==========================================
+// 3. AUTENTICACIÓN Y NAVEGACIÓN
+// ==========================================
+function handleLogin(event) {
+  event.preventDefault();
+  const usernameInput = document.getElementById('login-username');
+  const passwordInput = document.getElementById('login-password');
+  const message = document.getElementById('login-message');
+
+  if (!usernameInput || !passwordInput) return;
+
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if (!username || !password) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Completa usuario y contraseña.';
+    }
+    return;
+  }
+
+  const users = getUsers();
+  const matchedUser = users.find((user) => user.username.toLowerCase() === username.toLowerCase() && user.password === password);
+
+  if (!matchedUser) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Usuario o contraseña incorrectos.';
+    }
+    return;
+  }
+
+  setSessionUser({ username: matchedUser.username, role: matchedUser.role });
+  if (matchedUser.role !== 'Cliente') {
+    setCrudAccess();
+  }
+  updateNav();
+
+  if (message) {
+    message.className = 'message success';
+    message.textContent = 'Inicio de sesión correcto. Redirigiendo al inicio...';
+  }
+
+  window.location.href = 'index.html';
+}
+
+function handleRegister(event) {
+  event.preventDefault();
+  const usernameInput = document.getElementById('register-username');
+  const passwordInput = document.getElementById('register-password');
+  const roleInput = document.getElementById('register-role');
+  const message = document.getElementById('register-message');
+
+  if (!usernameInput || !passwordInput) return;
+
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+  const role = roleInput ? roleInput.value : 'Cliente';
+
+  if (!username || !password) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Debes completar usuario y contraseña.';
+    }
+    return;
+  }
+
+  const users = getUsers();
+  const exists = users.some((user) => user.username.toLowerCase() === username.toLowerCase());
+  if (exists) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Ese usuario ya existe. Elige otro nombre.';
+    }
+    return;
+  }
+
+  users.push({ username, password, role });
+  localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users));
+  if (message) {
+    message.className = 'message success';
+    message.textContent = 'Usuario registrado correctamente. Ya puedes iniciar sesión.';
+  }
+  event.target.reset();
+}
+
+function updateNav() {
+  const user = getSessionUser();
+  const navAuth = document.getElementById('nav-auth');
+  const navCrud = document.getElementById('nav-crud');
+
+  if (navAuth) {
+    if (user) {
+      navAuth.innerHTML = '<a href="#" id="logout-link">Cerrar sesión</a>';
+      const logoutLink = document.getElementById('logout-link');
+      if (logoutLink) {
+        logoutLink.addEventListener('click', handleLogout);
+      }
+    } else {
+      navAuth.innerHTML = '<a href="login.html">Login</a>';
+    }
+  }
+
+  if (navCrud) {
+    navCrud.style.display = user && user.role !== 'Cliente' ? 'block' : 'none';
+  }
+  
+  // Mostrar el nombre del usuario logueado en el Home si existe el elemento
+  const homeUserText = document.getElementById('home-user');
+  if (homeUserText) {
+    if (user) {
+      if (user.role === 'Cliente') {
+        homeUserText.textContent = `Hola, ${user.username}`;
+      } else if (user.role === 'Doctor') {
+        const title = user.username.trim().toLowerCase().endsWith('a') ? 'Dra.' : 'Dr.';
+        homeUserText.textContent = `Bienvenido(a) ${title} ${user.username}`;
+      } else {
+        homeUserText.textContent = `Bienvenido(a) ${user.username} (${user.role})`;
+      }
+    } else {
+      homeUserText.textContent = '';
+    }
+  }
+}
+
+function handleLogout(event) {
+  if (event) event.preventDefault();
+  clearSessionUser();
+  sessionStorage.removeItem(CRUD_ACCESS_KEY);
+  updateNav();
+  window.location.href = 'login.html';
+}
+
+// ==========================================
+// 4. ACCESO POR CONTRASEÑAS RÁPIDAS (PÁGINA LOGIN.HTML)
+// ==========================================
+function handleSecretaryPasswordSubmit(event) {
+  event.preventDefault();
+  const passwordInput = document.getElementById('secretary-password');
+  const message = document.getElementById('secretary-message');
+  const password = passwordInput ? passwordInput.value : '';
+
+  if (password !== SECRETARY_ACCESS_PASSWORD) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Contraseña incorrecta. Intenta de nuevo.';
+    }
+    return;
+  }
+
+  if (message) {
+    message.className = 'message success';
+    message.textContent = 'Acceso autorizado. Mostrando stock de medicamentos.';
+  }
+  setSessionUser({ username: 'Secretario', role: 'Secretario' });
+  setCrudAccess();
+  updateNav();
+  showPanel('stock-panel');
+  renderStock();
+  if (passwordInput) passwordInput.value = '';
+}
+
+function handleDoctorPasswordSubmit(event) {
+  event.preventDefault();
+  const passwordInput = document.getElementById('doctor-password');
+  const message = document.getElementById('doctor-password-message');
+  const password = passwordInput ? passwordInput.value : '';
+
+  if (password !== DOCTOR_ACCESS_PASSWORD) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Contraseña incorrecta. Intenta de nuevo.';
+    }
+    return;
+  }
+
+  if (message) {
+    message.className = 'message success';
+    message.textContent = 'Acceso autorizado. Mostrando historiales médicos.';
+  }
+  setSessionUser({ username: 'Médico', role: 'Doctor' });
+  setCrudAccess();
+  updateNav();
+  showPanel('doctor-panel');
+  updateDoctorHistorySelect();
+  renderDoctorHistory();
+  if (passwordInput) passwordInput.value = '';
+}
+
+function handleCrudPasswordSubmit(event) {
+  event.preventDefault();
+  const passwordInput = document.getElementById('crud-password');
+  const message = document.getElementById('crud-password-message');
+  const password = passwordInput ? passwordInput.value : '';
+
+  if (password !== ADMIN_ACCESS_PASSWORD) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Contraseña incorrecta. Intenta de nuevo.';
+    }
+    return;
+  }
+
+  setCrudAccess();
+  showCrudContent();
+  initCrudPageData();
+
+  if (message) {
+    message.className = 'message success';
+    message.textContent = 'Contraseña correcta. Ya puedes gestionar el CRUD.';
+  }
+  if (passwordInput) passwordInput.value = '';
+}
+
+function showPanel(panelId) {
+  const panels = document.querySelectorAll('.access-panel');
+  panels.forEach((panel) => {
+    if (panel.id === panelId) {
+      panel.classList.remove('hidden');
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      panel.classList.add('hidden');
+      panel.style.display = 'none';
+    }
+  });
+}
+
+function showCrudContent() {
+  const crudSection = document.querySelector('.crud-box');
+  const passwordPanel = document.getElementById('crud-password-panel');
+  if (crudSection) {
+    crudSection.classList.remove('hidden');
+    crudSection.style.display = 'block';
+  }
+  if (passwordPanel) {
+    passwordPanel.classList.add('hidden');
+    passwordPanel.style.display = 'none';
+  }
+}
+
+function showCrudPasswordPanel() {
+  const crudSection = document.querySelector('.crud-box');
+  const passwordPanel = document.getElementById('crud-password-panel');
+  if (crudSection) {
+    crudSection.classList.add('hidden');
+    crudSection.style.display = 'none';
+  }
+  if (passwordPanel) {
+    passwordPanel.classList.remove('hidden');
+    passwordPanel.style.display = 'block';
+  }
+}
+
+// ==========================================
+// 5. SOLICITUDES DE SERVICIOS (PÁGINA SERVICIO.HTML)
+// ==========================================
+function clearClientForms() {
+  const modal = document.getElementById('service-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+
+  const clientForms = document.querySelectorAll('.client-form');
+  clientForms.forEach((form) => {
+    form.classList.add('hidden');
+    form.style.display = 'none';
+  });
+}
+
+window.openServiceForm = function(serviceType) {
+  const user = getSessionUser();
+  const loginWarning = document.getElementById('service-login-warning') || document.getElementById('service-login-message');
+
+  // CONTROL DE ADVERTENCIA DE INICIO DE SESIÓN
+  if (!user) {
+    if (loginWarning) {
+      loginWarning.textContent = "⚠️ Debes iniciar sesión para poder agendar una cita o servicio.";
+      loginWarning.classList.remove('hidden');
+      loginWarning.style.display = 'block';
+      // Desplazar la pantalla automáticamente hacia el aviso para que el cliente lo vea bien
+      loginWarning.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      alert("Debes iniciar sesión para poder agendar una cita o servicio.");
+    }
+    return;
+  }
+
+  if (loginWarning) {
+    loginWarning.classList.add('hidden');
+    loginWarning.style.display = 'none';
+  }
+
+  clearClientForms();
+  
+  const serviceForm = document.getElementById('service-form') || document.getElementById('service-booking-form');
+  const serviceTypeInput = document.getElementById('service-type');
+  const detailLabel = document.getElementById('service-detail-label');
+  const serviceDetail = document.getElementById('service-detail');
+  const serviceMessage = document.getElementById('service-message');
+  const modal = document.getElementById('service-modal');
+
+  if (serviceMessage) serviceMessage.textContent = '';
+  if (serviceTypeInput) serviceTypeInput.value = serviceType;
+  
+  if (detailLabel) {
+    detailLabel.textContent = SERVICE_LABELS[serviceType] || 'Detalle del servicio';
+  }
+  if (serviceDetail) {
+    serviceDetail.placeholder = `Describe tus necesidades para ${serviceType.toLowerCase()}`;
+  }
+
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'block';
+  }
+
+  if (serviceForm) {
+    serviceForm.classList.remove('hidden');
+    serviceForm.style.display = 'block';
+  }
+};
+
+function handleServiceRequest(event) {
+  event.preventDefault();
+  const serviceType = document.getElementById('service-type').value;
+  const name = document.getElementById('service-pet-name').value.trim();
+  const phone = document.getElementById('service-phone').value.trim();
+  const professional = document.getElementById('service-professional').value;
+  const date = document.getElementById('service-date').value;
+  const detail = document.getElementById('service-detail').value.trim();
+  const message = document.getElementById('service-message');
+
+  if (!serviceType || !name || !phone || !professional || !date || !detail) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Completa todos los campos para enviar la solicitud.';
+    }
+    return;
+  }
+
+  const requests = getClientRequests();
+  const user = getSessionUser();
+  const requestType = serviceType === 'Cita médica' ? 'cita' : serviceType === 'Medicamento' ? 'medicamento' : 'servicio';
+
+  const request = {
+    id: 'service-' + Date.now(),
+    type: requestType,
+    service: serviceType,
+    petName: name,
+    professional: professional,
+    detail: detail,
+    phone: phone,
+    date: date,
+    user: user ? user.username : 'Cliente',
+    createdAt: new Date().toISOString(),
+    status: 'No atendido',
+    hospitalized: false
+  };
+
+  requests.push(request);
+  saveClientRequests(requests);
+
+  if (message) {
+    message.className = 'message success';
+    message.textContent = `Solicitud de ${serviceType.toLowerCase()} enviada correctamente.`;
+  }
+  event.target.reset();
+  setTimeout(clearClientForms, 2000);
+}
+
+function sendPhoneNotification(phone, subject, status) {
+  if (!phone) return `${subject} ${status}.`;
+  return `Mensaje enviado al ${phone}: Su ${subject.toLowerCase()} ha sido ${status.toLowerCase()}.`;
+}
+
+function isMedicationRequest(request) {
+  return request && (request.type === 'medicamento' || request.service === 'Medicamento');
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getSearchTokens(value) {
+  return normalizeText(value)
+    .split(' ')
+    .filter((token) => token.length >= 4);
+}
+
+function findMedicationStockItem(request, stockList = getStock()) {
+  const requestedText = normalizeText(`${request.item || ''} ${request.detail || ''}`);
+  const requestedTokens = getSearchTokens(requestedText);
+  if (!requestedText) return null;
+
+  return stockList.find((item) => {
+    const stockName = normalizeText(item.name);
+    const stockTokens = getSearchTokens(stockName);
+    const hasSharedToken = requestedTokens.some((requestedToken) => (
+      stockTokens.some((stockToken) => (
+        requestedToken.includes(stockToken) ||
+        stockToken.includes(requestedToken) ||
+        requestedToken.slice(0, 5) === stockToken.slice(0, 5)
+      ))
+    ));
+
+    return stockName && (requestedText.includes(stockName) || stockName.includes(requestedText) || hasSharedToken);
+  }) || null;
+}
+
+function getMedicationAvailability(request) {
+  const stockItem = findMedicationStockItem(request);
+  const needed = Number(request.amount) || 1;
+
+  if (!stockItem) {
+    return {
+      availability: 'No disponible',
+      stockLeft: 0,
+      expiry: '-',
+      stockItem: null
+    };
+  }
+
+  const currentQuantity = Number(stockItem.quantity) || 0;
+  return {
+    availability: currentQuantity >= needed ? 'Disponible' : 'Agotado',
+    stockLeft: currentQuantity,
+    expiry: stockItem.expiry || '-',
+    stockItem
+  };
+}
+
+function getRejectedRequestMessage(request) {
+  if (isMedicationRequest(request)) {
+    return 'Por el momento no hay medicamentos disponibles.';
+  }
+  return 'Por el momento no tenemos agenda disponible.';
+}
+
+function normalizePhoneForWhatsApp(phone) {
+  const digits = (phone || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10) return `57${digits}`;
+  if (digits.length === 11 && digits.startsWith('0')) return `57${digits.slice(1)}`;
+  return digits;
+}
+
+function buildWhatsAppLink(phone, text) {
+  const normalized = normalizePhoneForWhatsApp(phone);
+  if (!normalized) return null;
+  return `https://api.whatsapp.com/send?phone=${encodeURIComponent(normalized)}&text=${encodeURIComponent(text)}`;
+}
+
+function sendWhatsAppNotification(request) {
+  if (!request || !request.phone) return 'No hay número para enviar notificación WhatsApp.';
+  const messageText = `Hola, su cita médica para ${request.petName} ha sido aceptada. Nos vemos el ${request.date || ''}.`;
+  const url = buildWhatsAppLink(request.phone, messageText);
+  if (!url) return 'Número de WhatsApp inválido. No se generó la notificación.';
+
+  // Crear un enlace y simular click para evitar bloqueos de ventana emergente
+  try {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noreferrer noopener';
+    // Si se precisa, mostrar el enlace en el DOM como fallback (se remueve luego)
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return `Notificación por WhatsApp generada para ${request.phone}. Si no la recibes, abre este enlace: ${url}`;
+  } catch (err) {
+    return `No se pudo abrir WhatsApp automáticamente. Copia este enlace y pégalo en el navegador: ${url}`;
+  }
+}
+
+async function sendWhatsAppViaServer(request) {
+  if (!request || !request.phone) return 'No hay número para enviar notificación (servidor).';
+  // Define serverUrl OUTSIDE try-catch so it's accessible in catch block
+  let serverUrl = '/api/send-whatsapp';
+  if (typeof window !== 'undefined' && window.WHATSAPP_SERVER_URL) {
+    serverUrl = window.WHATSAPP_SERVER_URL;
+  } else if (typeof window !== 'undefined') {
+    try {
+      const loc = window.location || {};
+      if (loc.protocol === 'file:' || loc.hostname === '' || loc.hostname === '127.0.0.1' || loc.hostname === 'localhost') {
+        serverUrl = 'http://localhost:3000/api/send-whatsapp';
+      }
+    } catch (e) {
+      serverUrl = 'http://localhost:3000/api/send-whatsapp';
+    }
+  }
+  console.debug('WhatsApp serverUrl resolved to:', serverUrl);
+
+  // Personalizar el mensaje según el tipo de solicitud y disponibilidad
+  let messageText = '';
+  const tipo = (request.type || '').toLowerCase();
+  const servicio = (request.service || '').toLowerCase();
+  
+  if (request.unavailable) {
+    messageText = `Hola, lamentamos informarle que el medicamento solicitado (${request.item || request.detail || ''}) está agotado en este momento. Le avisaremos cuando llegue nuevamente. Gracias por su paciencia.`;
+  } else if (tipo === 'medicamento' || servicio === 'medicamento') {
+    messageText = `Hola, su medicamento (${request.item || request.detail || ''}) para ${request.petName || ''} está disponible. Puede pasar a recogerlo en el centro. Para dudas llame a los números en la página.`;
+  } else if (tipo === 'cita' || servicio === 'cita médica') {
+    messageText = `Hola, su cita médica para ${request.petName || ''} ha sido aceptada. Su médico asignado: ${request.professional || 'Dr.'}. Fecha: ${request.date || ''}. Para más información, llame a los números en la página.`;
+  } else {
+    messageText = `Hola, su solicitud de ${request.service || 'servicio'} para ${request.petName || ''} ha sido aceptada. Fecha: ${request.date || ''}. Detalles: ${request.detail || ''}. Para más información, llame a los números en la página.`;
+  }
+  try {
+    const resp = await fetch(serverUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: request.phone, message: messageText })
+    });
+
+    // Manejar respuestas que no sean JSON o cuerpos vacíos
+    let respText = '';
+    const contentType = resp.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      try {
+        const json = await resp.json();
+        respText = json && (json.error || json.message || JSON.stringify(json));
+      } catch (e) {
+        // respuesta con content-type JSON pero parseo falló
+        respText = await resp.text().catch(() => 'Respuesta no legible del servidor');
+      }
+    } else {
+      respText = await resp.text().catch(() => 'Respuesta no legible del servidor');
+    }
+
+    if (!resp.ok) {
+      const msg = respText || `HTTP ${resp.status}`;
+      // Log completo para depuración
+      const debug = { serverUrl, status: resp.status, statusText: resp.statusText, body: respText };
+      console.debug('WhatsApp server error response:', debug);
+      if (typeof window !== 'undefined') window.__lastWhatsAppDebug = debug;
+      return `Error al enviar WhatsApp: ${msg} (HTTP ${resp.status}). Verifica que el servidor en ${serverUrl} acepte POST.`;
+    }
+
+    // Mostrar solo un resumen breve para el usuario (no volcar JSON largo)
+    const extra = (respText && String(respText).length < 200) ? ' ' + String(respText) : '';
+    const debug = { serverUrl, status: resp.status, statusText: resp.statusText, body: respText };
+    console.debug('WhatsApp server success response:', debug);
+    if (typeof window !== 'undefined') window.__lastWhatsAppDebug = debug;
+    return `Notificación enviada por servidor a ${request.phone}.${extra}`;
+  } catch (err) {
+    // Simplificar y organizar el error para mostrar en la tabla
+    const short = (err && err.message) ? err.message.split('\n')[0] : String(err);
+    const debug = { serverUrl: (typeof serverUrl !== 'undefined') ? serverUrl : null, error: short };
+    console.debug('WhatsApp send exception:', debug);
+    if (typeof window !== 'undefined') window.__lastWhatsAppDebug = debug;
+    return `Error al comunicarse con el servidor de WhatsApp: ${short}`;
+  }
+}
+
+async function acceptDoctorRequest(id) {
+  const requests = getClientRequests();
+  const request = requests.find((r) => r.id === id);
+  if (!request) return;
+  const wasAccepted = request.status === 'Aceptado';
+  request.status = 'Aceptado';
+  
+  // Handle medication requests: check stock and decrement
+  if (isMedicationRequest(request)) {
+    const stock = getStock();
+    const stockItem = findMedicationStockItem(request, stock);
+    const needed = Number(request.amount) || 1;
+    if (stockItem && Number(stockItem.quantity) >= needed && !wasAccepted) {
+      stockItem.quantity = Number(stockItem.quantity) - needed;
+      saveStock(stock);
+      request.availability = 'Disponible';
+      request.stockLeft = stockItem.quantity;
+      request.expiry = stockItem.expiry;
+      request.unavailable = false;
+    } else if (stockItem && wasAccepted) {
+      request.availability = 'Disponible';
+      request.stockLeft = stockItem.quantity;
+      request.expiry = stockItem.expiry;
+      request.unavailable = false;
+    } else {
+      request.availability = 'Agotado';
+      request.stockLeft = stockItem ? stockItem.quantity : 0;
+      request.expiry = stockItem ? stockItem.expiry : '';
+      request.unavailable = true;
+    }
+  }
+  
+  // Send WhatsApp for ALL service types (medicamento, cita, peluquería, etc.)
+  const serverResult = await sendWhatsAppViaServer(request);
+  request.whatsappMessage = serverResult;
+  try { request.whatsappDebug = window.__lastWhatsAppDebug ? JSON.stringify(window.__lastWhatsAppDebug) : ''; } catch(e) { request.whatsappDebug = ''; }
+  
+  request.phoneMessage = sendPhoneNotification(request.phone, request.service || 'solicitud', 'Aceptado');
+  saveClientRequests(requests);
+  initCrudPageData();
+}
+
+function rejectDoctorRequest(id) {
+  const requests = getClientRequests();
+  const request = requests.find((r) => r.id === id);
+  if (!request) return;
+  request.status = 'Rechazado';
+  request.unavailable = true;
+  request.availability = isMedicationRequest(request) ? 'No disponible' : 'Agenda no disponible';
+  if (isMedicationRequest(request)) {
+    const stockInfo = getMedicationAvailability(request);
+    request.stockLeft = stockInfo.stockLeft;
+    request.expiry = stockInfo.expiry;
+  }
+  request.phoneMessage = getRejectedRequestMessage(request);
+  request.whatsappMessage = request.phone
+    ? `Mensaje para ${request.phone}: ${request.phoneMessage}`
+    : request.phoneMessage;
+  saveClientRequests(requests);
+  initCrudPageData();
+}
+
+function showClientForm(formId) {
+  const user = getSessionUser();
+  const message = document.getElementById('login-message');
+
+  if (!user) {
+    showPanel('login-panel');
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Primero inicia sesión como cliente.';
+    }
+    return;
+  }
+
+  clearClientForms();
+  const form = document.getElementById(formId);
+  if (form) {
+    form.classList.remove('hidden');
+    form.style.display = 'block';
+  }
+}
+
+function handleAdoptionRequest(event) {
+  event.preventDefault();
+  const nameInput = document.getElementById('adopt-name');
+  const petInput = document.getElementById('adopt-pet');
+  const detailInput = document.getElementById('adopt-detail');
+  const message = document.getElementById('adoption-message');
+
+  const fullName = nameInput ? nameInput.value.trim() : '';
+  const petName = petInput ? petInput.value.trim() : '';
+  const detail = detailInput ? detailInput.value.trim() : '';
+
+  if (!fullName || !petName || !detail) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Completa todos los campos de adopción.';
+    }
+    return;
+  }
+
+  const user = getSessionUser();
+  const requests = getClientRequests();
+  requests.push({
+    id: 'adoption-' + Date.now(),
+    type: 'servicio',
+    service: 'Adopción',
+    petName,
+    professional: 'Equipo de adopción',
+    detail: `${fullName}: ${detail}`,
+    date: new Date().toISOString().split('T')[0],
+    user: user ? user.username : fullName,
+    createdAt: new Date().toISOString(),
+    status: 'No atendido',
+    hospitalized: false
+  });
+  saveClientRequests(requests);
+
+  if (message) {
+    message.className = 'message success';
+    message.textContent = 'Solicitud de adopción enviada correctamente.';
+  }
+  event.target.reset();
+}
+
+function handleMedicationRequest(event) {
+  event.preventDefault();
+  const petInput = document.getElementById('med-name');
+  const itemInput = document.getElementById('med-item');
+  const amountInput = document.getElementById('med-amount');
+  const notesInput = document.getElementById('med-notes');
+  const message = document.getElementById('medication-message');
+
+  const petName = petInput ? petInput.value.trim() : '';
+  const item = itemInput ? itemInput.value.trim() : '';
+  const amount = amountInput ? amountInput.value : '';
+  const notes = notesInput ? notesInput.value.trim() : '';
+
+  if (!petName || !item || !amount) {
+    if (message) {
+      message.className = 'message error';
+      message.textContent = 'Completa mascota, medicamento y cantidad.';
+    }
+    return;
+  }
+
+  const user = getSessionUser();
+  const requests = getClientRequests();
+  requests.push({
+    id: 'medication-' + Date.now(),
+    type: 'medicamento',
+    service: 'Medicamento',
+    petName,
+    item,
+    amount,
+    detail: notes,
+    user: user ? user.username : 'Cliente',
+    createdAt: new Date().toISOString(),
+    status: 'No atendido'
+  });
+  saveClientRequests(requests);
+
+  if (message) {
+    message.className = 'message success';
+    message.textContent = 'Solicitud de medicamento enviada correctamente.';
+  }
+  event.target.reset();
+}
+
+// ==========================================
+// 6. CONTROL Y GESTIÓN DEL CRUD DE PACIENTES (PÁGINA CRUD.HTML)
+// ==========================================
+function clearPatientForm() {
+  const fields = ['patient-id', 'patient-name', 'patient-species', 'patient-age', 'patient-owner', 'patient-status', 'patient-observations'];
+  fields.forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.value = '';
+  });
+  const formMessage = document.getElementById('form-message');
+  if (formMessage) {
+    formMessage.textContent = '';
+    formMessage.className = 'message';
+  }
+}
+
+function renderPatients() {
+  const tableBody = document.getElementById('patient-table-body');
+  if (!tableBody) return;
+
+  const patients = getPatients();
+  tableBody.innerHTML = '';
+  if (patients.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay pacientes registrados.</td></tr>';
+    return;
+  }
+
+  patients.forEach((patient) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><b>${patient.nombre}</b></td>
+      <td>${patient.especie}</td>
+      <td>${patient.edad}</td>
+      <td>${patient.dueno}</td>
+      <td><span class="status-badge">${patient.estado}</span></td>
+      <td><small>${patient.observaciones || '<i>Sin observaciones</i>'}</small></td>
+      <td class="action-buttons">
+        <button type="button" class="primary" onclick="editPatient('${patient.id}')">Editar</button>
+        <button type="button" class="delete" style="background-color:#ff4d4d; color:white; border:none; cursor:pointer;" onclick="deletePatientFromCrud('${patient.id}')">Eliminar</button>
+      </td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+window.editPatient = function(id) {
+  const patients = getPatients();
+  const patient = patients.find((item) => item.id === id);
+  if (!patient) return;
+
+  if(document.getElementById('patient-id')) document.getElementById('patient-id').value = patient.id;
+  if(document.getElementById('patient-name')) document.getElementById('patient-name').value = patient.nombre;
+  if(document.getElementById('patient-species')) document.getElementById('patient-species').value = patient.especie;
+  if(document.getElementById('patient-age')) document.getElementById('patient-age').value = patient.edad;
+  if(document.getElementById('patient-owner')) document.getElementById('patient-owner').value = patient.dueno;
+  if(document.getElementById('patient-status')) document.getElementById('patient-status').value = patient.estado;
+  
+  const observacionesInput = document.getElementById('patient-observations');
+  if (observacionesInput) {
+    observacionesInput.value = patient.observaciones || '';
+  }
+  
+  const submitBtn = document.querySelector('#patient-form button.primary');
+  if (submitBtn) {
+    submitBtn.textContent = "Actualizar Paciente";
+  }
+};
+
+window.deletePatientFromCrud = function(id) {
+  if (confirm('¿Estás seguro de que deseas eliminar este paciente?')) {
+    let patients = getPatients();
+    patients = patients.filter((p) => p.id !== id);
+    savePatients(patients);
+    initCrudPageData();
+  }
+};
+
+// ==========================================
+// 7. RENDERIZADORES DE TABLAS INFERIORES Y REPORTES
+// ==========================================
+function renderStock() {
+  const stockTableBody = document.getElementById('stock-table-body');
+  if (!stockTableBody) return;
+  
+  const stock = getStock();
+  const isCrudStockTable = document.body && document.body.getAttribute('data-page') === 'crud';
+  stockTableBody.innerHTML = '';
+  if (stock.length === 0) {
+    stockTableBody.innerHTML = `<tr><td colspan="${isCrudStockTable ? 4 : 3}">No hay medicamentos registrados.</td></tr>`;
+    return;
+  }
+  stock.forEach((item) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${item.name}</td>
+      <td>${item.quantity}</td>
+      <td>${item.expiry}</td>
+      ${isCrudStockTable ? `<td class="action-buttons"><button type="button" class="primary" onclick="replenishStockItem('${item.id}')">Agregar stock</button></td>` : ''}
+    `;
+    stockTableBody.appendChild(row);
+  });
+}
+
+function replenishStockItem(id) {
+  const stock = getStock();
+  const item = stock.find((stockItem) => stockItem.id === id);
+  if (!item) return;
+
+  const amountText = prompt(`Cantidad nueva para ${item.name}:`, item.quantity || 1);
+  if (amountText === null) return;
+  const quantity = Number(amountText);
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    alert('Ingresa una cantidad válida.');
+    return;
+  }
+
+  const expiry = prompt(`Fecha de vencimiento para ${item.name} (AAAA-MM-DD):`, item.expiry || '');
+  if (expiry === null) return;
+
+  item.quantity = quantity;
+  item.expiry = expiry.trim() || item.expiry || '-';
+  saveStock(stock);
+  initCrudPageData();
+}
+
+function addNewStockItem() {
+  const name = prompt('Nombre del medicamento nuevo:');
+  if (name === null) return;
+  const cleanName = name.trim();
+  if (!cleanName) {
+    alert('Debes escribir el nombre del medicamento.');
+    return;
+  }
+
+  const amountText = prompt(`Cantidad disponible para ${cleanName}:`, '1');
+  if (amountText === null) return;
+  const quantity = Number(amountText);
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    alert('Ingresa una cantidad válida.');
+    return;
+  }
+
+  const expiry = prompt(`Fecha de vencimiento para ${cleanName} (AAAA-MM-DD):`, '');
+  if (expiry === null) return;
+
+  const stock = getStock();
+  const existingItem = stock.find((item) => normalizeText(item.name) === normalizeText(cleanName));
+  if (existingItem) {
+    existingItem.quantity = Number(existingItem.quantity || 0) + quantity;
+    existingItem.expiry = expiry.trim() || existingItem.expiry || '-';
+  } else {
+    stock.push({
+      id: 'stock-' + Date.now(),
+      name: cleanName,
+      quantity,
+      expiry: expiry.trim() || '-'
+    });
+  }
+
+  saveStock(stock);
+  initCrudPageData();
+}
+
+function getServiceRequestPetNames() {
+  const requests = getClientRequests();
+  return [...new Set(requests.map((request) => request.petName).filter(Boolean))];
+}
+
+function updatePatientHistorySelect() {
+  const select = document.getElementById('history-patient-select') || document.getElementById('doctor-pet-select');
+  if (!select) return;
+
+  const patients = getPatients();
+  const requestPets = getServiceRequestPetNames();
+  const historyMap = new Map();
+
+  patients.forEach((patient) => {
+    if (patient.nombre) {
+      historyMap.set(patient.nombre, `${patient.nombre} (${patient.dueno})`);
+    }
+  });
+
+  requestPets.forEach((petName) => {
+    if (!historyMap.has(petName)) {
+      historyMap.set(petName, petName);
+    }
+  });
+
+  select.innerHTML = '<option value="">Selecciona una mascota</option>';
+  historyMap.forEach((label, petName) => {
+    const option = document.createElement('option');
+    option.value = petName;
+    option.textContent = label;
+    select.appendChild(option);
+  });
+}
+
+function updateDoctorHistorySelect() {
+  updatePatientHistorySelect();
+}
+
+function renderPatientHistory() {
+  const select = document.getElementById('history-patient-select') || document.getElementById('doctor-pet-select');
+  const tableBody = document.getElementById('patient-history-table-body') || document.getElementById('doctor-history-table-body');
+  if (!select || !tableBody) return;
+
+  const petName = select.value.trim();
+  tableBody.innerHTML = '';
+  if (!petName) {
+    tableBody.innerHTML = '<tr><td colspan="5">Selecciona una mascota para ver su historial.</td></tr>';
+    return;
+  }
+
+  const requests = getClientRequests().filter((request) => request.petName === petName);
+  if (requests.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="5">No hay historial médico para esta mascota.</td></tr>';
+    return;
+  }
+
+  requests.forEach((request) => {
+    const row = document.createElement('tr');
+    const typeLabel = request.type === 'cita' ? 'Cita médica' : request.service || 'Servicio';
+    row.innerHTML = `
+      <td>${typeLabel}</td>
+      <td>${request.detail || '-'}</td>
+      <td>${request.professional || '-'}</td>
+      <td>${request.date || '-'}</td>
+      <td>${request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '-'}</td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+function renderDoctorHistory() {
+  renderPatientHistory();
+}
+
+function renderAppointmentsPanel() {
+  const tableBody = document.getElementById('appointments-table-body');
+  if (!tableBody) return;
+
+  const requests = getClientRequests().filter((r) => r.type === 'cita' || r.type === 'servicio');
+  tableBody.innerHTML = '';
+
+  if (requests.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="6">No hay citas pendientes.</td></tr>';
+    return;
+  }
+
+  requests.forEach((req) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><b>${req.petName}</b></td>
+      <td>${req.service}</td>
+      <td>${req.date}</td>
+      <td>${req.status}</td>
+      <td>${req.hospitalized ? 'Sí' : 'No'}</td>
+      <td>${new Date(req.createdAt).toLocaleDateString()}</td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+// CORRECCIÓN EXTRA: Función requerida por tu crud.html que estaba faltando en tus llamadas
+function renderDoctorRequests() {
+  const tableBody = document.getElementById('doctor-request-table-body');
+  if (!tableBody) return;
+
+  const requests = getClientRequests().filter((r) => r.type === 'cita' || r.type === 'servicio');
+  tableBody.innerHTML = '';
+
+  if (requests.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="7">No hay solicitudes de citas médicas.</td></tr>';
+    return;
+  }
+
+  requests.forEach((req) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><b>${req.petName}</b></td>
+      <td>${req.detail}</td>
+      <td>${req.date}</td>
+      <td>${req.phone || '-'}</td>
+      <td>${req.status}</td>
+      <td>${req.hospitalized ? 'Sí' : 'No'}</td>
+      <td>
+        <button type="button" class="primary" onclick="acceptDoctorRequest('${req.id}')">Aceptar</button>
+        <button type="button" class="secondary" onclick="rejectDoctorRequest('${req.id}')">Rechazar</button>
+        ${req.whatsappMessage || req.phoneMessage ? `<div class="small-note">${req.whatsappMessage || req.phoneMessage}</div>` : ''}
+      </td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+// CORRECCIÓN EXTRA: Función requerida por tu crud.html que estaba faltando en tus llamadas
+function renderMedicationRequests() {
+  const tableBody = document.getElementById('medication-request-table-body');
+  if (!tableBody) return;
+
+  const requests = getClientRequests().filter((r) => r.type === 'medicamento');
+  tableBody.innerHTML = '';
+
+  if (requests.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="11">No hay solicitudes de medicamentos.</td></tr>';
+    return;
+  }
+
+  requests.forEach((req) => {
+    const row = document.createElement('tr');
+    const stockInfo = getMedicationAvailability(req);
+    const availability = req.availability || stockInfo.availability || 'Pendiente';
+    const availabilityKey = normalizeText(availability).replace(/\s+/g, '-');
+    const showAvailableButton = availabilityKey === 'agotado' || availabilityKey === 'no-disponible' || req.status === 'Rechazado';
+    const stockLeft = req.status === 'Aceptado' || req.status === 'Rechazado'
+      ? ((req.stockLeft !== undefined) ? req.stockLeft : stockInfo.stockLeft)
+      : stockInfo.stockLeft;
+    const expiry = req.expiry || stockInfo.expiry || '-';
+    const message = req.whatsappMessage || req.phoneMessage || (req.status === 'Rechazado' ? getRejectedRequestMessage(req) : '');
+    row.innerHTML = `
+      <td><b>${req.petName}</b></td>
+      <td>${req.item || req.detail || 'Medicamento Prescrito'}</td>
+      <td>${req.amount || 1}</td>
+      <td><span class="status-badge ${availabilityKey}">${availability}</span></td>
+      <td>${stockLeft}</td>
+      <td>${expiry}</td>
+      <td>${req.phone || '-'}</td>
+      <td>${new Date(req.createdAt).toLocaleDateString()}</td>
+      <td><span class="status-badge ${normalizeText(req.status || 'Pendiente').replace(/\s+/g, '-')}">${req.status || 'Pendiente'}</span></td>
+      <td class="action-buttons">
+        <button type="button" class="primary" onclick="acceptDoctorRequest('${req.id}')">Aceptar</button>
+        <button type="button" class="secondary" onclick="rejectDoctorRequest('${req.id}')">Rechazar</button>
+        ${showAvailableButton ? `<button type="button" class="primary" onclick="markMedicationAvailable('${req.id}')">Ya no está agotado</button>` : ''}
+      </td>
+      <td>
+        ${message}
+        ${req.whatsappDebug ? `<br><button type="button" class="small" onclick="showWhatsAppDebug('${req.id}')">Detalles</button>` : ''}
+      </td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+function markMedicationAvailable(id) {
+  const requests = getClientRequests();
+  const request = requests.find((req) => req.id === id);
+  if (!request) return;
+
+  const stock = getStock();
+  let stockItem = findMedicationStockItem(request, stock);
+  const medicineName = request.item || request.detail || 'Medicamento';
+  const currentQuantity = stockItem ? Number(stockItem.quantity) || 0 : Number(request.amount) || 1;
+  const amountText = prompt(`Cantidad disponible para ${medicineName}:`, currentQuantity > 0 ? currentQuantity : (Number(request.amount) || 1));
+  if (amountText === null) return;
+
+  const quantity = Number(amountText);
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    alert('Ingresa una cantidad mayor a 0 para marcarlo como disponible.');
+    return;
+  }
+
+  const expiry = prompt(`Fecha de vencimiento para ${medicineName} (AAAA-MM-DD):`, stockItem ? (stockItem.expiry || '') : '');
+  if (expiry === null) return;
+
+  if (!stockItem) {
+    stockItem = {
+      id: 'stock-' + Date.now(),
+      name: medicineName,
+      quantity,
+      expiry: expiry.trim() || '-'
+    };
+    stock.push(stockItem);
+  } else {
+    stockItem.quantity = quantity;
+    stockItem.expiry = expiry.trim() || stockItem.expiry || '-';
+  }
+
+  request.availability = 'Disponible';
+  request.stockLeft = quantity;
+  request.expiry = stockItem.expiry;
+  request.unavailable = false;
+  request.status = request.status === 'Rechazado' ? 'No atendido' : request.status;
+  request.phoneMessage = 'El medicamento ya se encuentra disponible.';
+  request.whatsappMessage = '';
+
+  saveStock(stock);
+  saveClientRequests(requests);
+  initCrudPageData();
+}
+
+function showWhatsAppDebug(id) {
+  const requests = getClientRequests();
+  const req = requests.find((r) => r.id === id);
+  if (!req) return alert('No se encontró la solicitud para ver detalles.');
+  const debug = req.whatsappDebug || 'No hay detalles disponibles.';
+  // Mostrar en modal simple o alert (suficiente para depuración local)
+  try {
+    const parsed = JSON.parse(debug);
+    alert('Detalles del envío:\n' + JSON.stringify(parsed, null, 2));
+  } catch (e) {
+    alert('Detalles del envío:\n' + debug);
+  }
+}
+
+function renderDoctorReports() {
+  const reportSummary = document.getElementById('report-summary');
+  if (!reportSummary) return;
+
+  const patients = getPatients();
+  const total = patients.length;
+  const alta = patients.filter((p) => p.estado === 'Alta' || p.status === 'Alta').length;
+  const revision = patients.filter((p) => p.estado === 'Revisión' || p.status === 'Revisión').length;
+  const activos = patients.filter((p) => p.estado === 'Activo' || p.status === 'Activo').length;
+
+  reportSummary.textContent = `Hoy se revisaron ${total} mascotas, ${alta} de alta, ${revision} en revisión, ${activos} activos.`;
+}
+
+function downloadDoctorReport(clearAfterExport = false) {
+  const requests = getClientRequests();
+  if (!requests || requests.length === 0) {
+    alert('No hay solicitudes para exportar.');
+    return;
+  }
+
+  const rows = [
+    ['Tipo', 'Servicio', 'Paciente', 'Detalle', 'Profesional', 'Fecha', 'Teléfono', 'Estado', 'Registrado']
+  ];
+
+  requests.forEach((req) => {
+    rows.push([
+      req.type || '',
+      req.service || '',
+      req.petName || '',
+      req.detail || '',
+      req.professional || '',
+      req.date || '',
+      req.phone || '',
+      req.status || '',
+      new Date(req.createdAt).toLocaleString()
+    ]);
+  });
+
+  const csvContent = '\uFEFF' + rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = `pet_humboldt_reporte_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(downloadUrl);
+
+  if (clearAfterExport) {
+    clearClientRequestsAfterExport();
+  }
+}
+
+function clearClientRequestsAfterExport() {
+  if (!confirm('¿Deseas borrar todas las solicitudes después de exportarlas? Esta acción no se puede deshacer.')) {
+    return;
+  }
+  localStorage.removeItem(STORAGE_CLIENT_REQUESTS_KEY);
+  initCrudPageData();
+}
+
+function initCrudPageData() {
+  renderPatients();
+  renderStock();
+  updatePatientHistorySelect();
+  renderPatientHistory();
+  renderDoctorRequests();
+  renderMedicationRequests();
+  renderAppointmentsPanel();
+  renderDoctorReports();
+}
+
+// ==========================================
+// 8. ASIGNACIÓN E INICIALIZACIÓN DEL CRUD
+// ==========================================
+function initCrudPage() {
+  const crudPasswordForm = document.getElementById('crud-password-form');
+  if (crudPasswordForm) {
+    crudPasswordForm.addEventListener('submit', handleCrudPasswordSubmit);
+  }
+
+  if (!requireAdminAccess()) {
+    showCrudPasswordPanel();
+    return;
+  }
+
+  showCrudContent();
+
+  const user = getSessionUser();
+  const nameSpan = document.getElementById('crud-user-name');
+  if (nameSpan) {
+    nameSpan.textContent = user ? user.username : 'Doctor / Administrador';
+  }
+
+  const form = document.getElementById('patient-form');
+  const clearButton = document.getElementById('clear-form');
+  const historySelect = document.getElementById('history-patient-select');
+
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const idField = document.getElementById('patient-id');
+      const nombre = document.getElementById('patient-name').value.trim();
+      const especie = document.getElementById('patient-species').value.trim();
+      const edad = document.getElementById('patient-age').value.trim();
+      const dueno = document.getElementById('patient-owner').value.trim();
+      const estado = document.getElementById('patient-status').value;
+      const observacionesInput = document.getElementById('patient-observations');
+      const observaciones = observacionesInput ? observacionesInput.value.trim() : '';
+      const message = document.getElementById('form-message');
+
+      if (!nombre || !especie || !edad || !dueno || !estado) {
+        if (message) {
+          message.style.color = "red";
+          message.textContent = 'Todos los campos obligatorios deben ser completados.';
+        }
+        return;
+      }
+
+      const patients = getPatients();
+      const currentId = idField.value;
+      const patientData = { id: currentId || 'patient-' + Date.now(), nombre, especie, edad, dueno, estado, observaciones };
+
+      if (currentId) {
+        const index = patients.findIndex((item) => item.id === currentId);
+        if (index !== -1) patients[index] = patientData;
+      } else {
+        patients.push(patientData);
+      }
+
+      savePatients(patients);
+
+      // Sincronización automática de citas
+      const requests = getClientRequests();
+      const reqIndex = requests.findIndex((r) => r.patientId === patientData.id || (r.petName === nombre && r.user === dueno));
+      
+      const appointmentData = {
+        id: reqIndex !== -1 ? requests[reqIndex].id : 'service-' + Date.now(),
+        type: 'cita',
+        service: 'Cita médica',
+        petName: nombre,
+        patientId: patientData.id,
+        professional: 'Dr. Alejandro',
+        detail: observaciones || 'Revisión general en consulta.',
+        date: new Date().toISOString().split('T')[0],
+        user: dueno,
+        createdAt: reqIndex !== -1 ? requests[reqIndex].createdAt : new Date().toISOString(),
+        status: estado === 'Alta' ? 'Atendido' : (estado === 'Revisión' ? 'En revisión' : 'No atendido'),
+        hospitalized: estado === 'Revisión'
+      };
+
+      if (reqIndex !== -1) requests[reqIndex] = appointmentData;
+      else requests.push(appointmentData);
+      
+      saveClientRequests(requests);
+      initCrudPageData();
+      clearPatientForm();
+
+      if (message) {
+        message.style.color = "green";
+        message.textContent = 'Paciente y paneles inferiores sincronizados correctamente.';
+        setTimeout(() => { message.textContent = ''; }, 3000);
+      }
+      
+      const submitBtn = document.querySelector('#patient-form button.primary');
+      if (submitBtn) submitBtn.textContent = "Guardar paciente";
+    });
+  }
+
+  if (historySelect) historySelect.addEventListener('change', renderPatientHistory);
+
+  if (clearButton) {
+    clearButton.addEventListener('click', function () {
+      clearPatientForm();
+      const submitBtn = document.querySelector('#patient-form button.primary');
+      if (submitBtn) submitBtn.textContent = "Guardar paciente";
+    });
+  }
+
+  const downloadReportButton = document.getElementById('download-report');
+  if (downloadReportButton) {
+    downloadReportButton.addEventListener('click', () => downloadDoctorReport(false));
+  }
+
+  const downloadAndClearButton = document.getElementById('download-and-clear-report');
+  if (downloadAndClearButton) {
+    downloadAndClearButton.addEventListener('click', () => downloadDoctorReport(true));
+  }
+
+  const addStockButton = document.getElementById('add-stock-item');
+  if (addStockButton) {
+    addStockButton.addEventListener('click', addNewStockItem);
+  }
+
+  initCrudPageData();
+}
+
+// ==========================================
+// 9. CONFIGURACIÓN EXCLUSIVA DE LOS BOTONES DE INICIO (INDEX.HTML)
+// ==========================================
+function setupHomeButtons() {
+  const serviceBtn = document.getElementById('home-service-btn');
+  const loginBtn = document.getElementById('home-login-btn');
+  const crudBtn = document.getElementById('home-crud-btn');
+
+  if (serviceBtn) {
+    serviceBtn.addEventListener('click', () => { window.location.href = 'servicio.html'; });
+  }
+  
+  if (loginBtn) {
+    loginBtn.addEventListener('click', handleHomeAccountAccess);
+  }
+
+  if (crudBtn) {
+    crudBtn.addEventListener('click', () => { window.location.href = 'crud.html'; });
+  }
+}
+
+function handleHomeAccountAccess() {
+  const user = getSessionUser();
+  if (!user) {
+    window.location.href = 'login.html';
+    return;
+  }
+  renderHomeAccountPanel(user);
+}
+
+function renderHomeAccountPanel(user) {
+  const accountPanel = document.getElementById('account-panel');
+  const homeActions = document.querySelector('.home-actions');
+  const ownerName = document.getElementById('account-owner-name');
+  const userRole = document.getElementById('account-user-role');
+  const petsList = document.getElementById('account-pets-list');
+  const totalAppointments = document.getElementById('account-total-appointments');
+  const totalServices = document.getElementById('account-total-services');
+  const totalMedications = document.getElementById('account-total-medications');
+  const lastRequest = document.getElementById('account-last-request');
+  const doctorDetails = document.getElementById('doctor-account-details');
+  const doctorAssignedCount = document.getElementById('doctor-total-assigned');
+  const doctorServiceCount = document.getElementById('doctor-total-services');
+  const doctorPendingCount = document.getElementById('doctor-pending-count');
+  const doctorTableBody = document.getElementById('doctor-account-table-body');
+  const clientLastRequestRow = document.getElementById('client-account-last-request-row');
+
+  if (ownerName) ownerName.textContent = user.username || '-';
+  if (userRole) userRole.textContent = user.role || '-';
+
+  if (user.role === 'Doctor') {
+    const doctorRequests = getClientRequests().filter((req) => req.type === 'cita' || req.type === 'servicio');
+    const pendingRequests = doctorRequests.filter((req) => req.status === 'No atendido' || req.status === 'En revisión');
+    const latestRequest = doctorRequests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+    if (totalAppointments) totalAppointments.textContent = doctorRequests.filter((req) => req.type === 'cita').length;
+    if (totalServices) totalServices.textContent = doctorRequests.filter((req) => req.type === 'servicio').length;
+    if (totalMedications) totalMedications.textContent = 0;
+    if (petsList) {
+      petsList.innerHTML = '<li>No aplica para perfil de doctor</li>';
+    }
+    if (lastRequest) lastRequest.textContent = latestRequest ? `${latestRequest.service || latestRequest.type} - ${latestRequest.date || 'sin fecha'}` : 'Sin solicitudes recientes';
+    if (clientLastRequestRow) clientLastRequestRow.style.display = 'block';
+    if (doctorDetails) {
+      doctorDetails.classList.remove('hidden');
+      if (doctorAssignedCount) doctorAssignedCount.textContent = doctorRequests.length;
+      if (doctorServiceCount) doctorServiceCount.textContent = doctorRequests.filter((req) => req.type === 'servicio').length;
+      if (doctorPendingCount) doctorPendingCount.textContent = pendingRequests.length;
+      if (doctorTableBody) {
+        doctorTableBody.innerHTML = doctorRequests.length
+          ? doctorRequests.map((req) => `
+              <tr>
+                <td><b>${req.petName || '-'}</b></td>
+                <td>${req.service || req.type}</td>
+                <td>${req.date || '-'}</td>
+                <td>${req.status || '-'}</td>
+              </tr>
+            `).join('')
+          : '<tr><td colspan="4">No hay citas o servicios asignados.</td></tr>';
+      }
+    }
+  } else {
+    const requests = getClientRequests().filter((req) => req.user === user.username);
+    const appointmentRequests = requests.filter((req) => req.type === 'cita');
+    const serviceRequests = requests.filter((req) => req.type === 'servicio' || req.service === 'Peluquería' || req.service === 'Medicina' || req.service === 'Radiografías' || req.service === 'Guardería canina' || req.service === 'Ecografías' || req.service === 'Adopción');
+    const medicationRequests = requests.filter((req) => req.type === 'medicamento');
+    const petNames = [...new Set(requests.map((req) => req.petName).filter(Boolean))];
+    const latestRequest = requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+    if (totalAppointments) totalAppointments.textContent = appointmentRequests.length;
+    if (totalServices) totalServices.textContent = serviceRequests.length;
+    if (totalMedications) totalMedications.textContent = medicationRequests.length;
+    if (petsList) {
+      petsList.innerHTML = petNames.length ? petNames.map((name) => `<li>${name}</li>`).join('') : '<li>No hay mascotas registradas</li>';
+    }
+    if (lastRequest) lastRequest.textContent = latestRequest ? `${latestRequest.service || latestRequest.type} - ${latestRequest.date || 'sin fecha'}` : 'Sin solicitudes recientes';
+    if (doctorDetails) doctorDetails.classList.add('hidden');
+  }
+
+  if (accountPanel) {
+    accountPanel.classList.remove('hidden');
+    accountPanel.scrollIntoView({ behavior: 'smooth' });
+  }
+  if (homeActions) {
+    homeActions.classList.add('hidden');
+  }
+
+  const closeBtn = document.getElementById('account-close-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (accountPanel) accountPanel.classList.add('hidden');
+      if (homeActions) homeActions.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+}
+
+function setupLoginPage() {
+  const roleClient = document.getElementById('role-client');
+  const roleAdmin = document.getElementById('role-admin');
+  const roleSecretary = document.getElementById('role-secretary');
+  const roleDoctor = document.getElementById('role-doctor');
+  const roleRegister = document.getElementById('role-register');
+
+  if (roleClient) roleClient.addEventListener('click', () => showPanel('login-panel'));
+  if (roleAdmin) roleAdmin.addEventListener('click', () => showPanel('login-panel'));
+  if (roleSecretary) roleSecretary.addEventListener('click', () => showPanel('secretary-password-panel'));
+  if (roleDoctor) roleDoctor.addEventListener('click', () => showPanel('login-panel'));
+  if (roleRegister) roleRegister.addEventListener('click', () => showPanel('register-panel'));
+
+  const serviceButtons = [
+    ['show-appointment-form', 'Cita médica'],
+    ['service-peluqueria', 'Peluquería'],
+    ['service-radiografias', 'Radiografías'],
+    ['service-guarderia', 'Guardería canina'],
+    ['service-ecografias', 'Ecografías']
+  ];
+
+  serviceButtons.forEach(([id, service]) => {
+    const button = document.getElementById(id);
+    if (button) button.addEventListener('click', () => window.openServiceForm(service));
+  });
+
+  const adoptionButton = document.getElementById('show-adoption-panel');
+  if (adoptionButton) adoptionButton.addEventListener('click', () => showClientForm('adoption-panel'));
+
+  const medicationButton = document.getElementById('show-medication-form');
+  if (medicationButton) medicationButton.addEventListener('click', () => showClientForm('medication-form'));
+
+}
+
+// ==========================================
+// 10. INICIALIZADOR DE EVENTOS GLOBALES
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  ensureDefaultUsers();
+  updateNav();
+
+  const pageType = document.body.getAttribute('data-page');
+  const sessionUser = getSessionUser();
+  
+  if (sessionUser && pageType === 'login') {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  // Ejecutar configuraciones según la página actual de manera aislada y segura
+  if (pageType === 'crud') {
+    initCrudPage();
+  } else if (pageType === 'home') {
+    setupHomeButtons();
+  } else if (pageType === 'login') {
+    setupLoginPage();
+  }
+
+  const registerForm = document.getElementById('register-form');
+  if (registerForm) registerForm.addEventListener('submit', handleRegister);
+
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) loginForm.addEventListener('submit', handleLogin);
+
+  const secretaryForm = document.getElementById('secretary-password-form');
+  if (secretaryForm) secretaryForm.addEventListener('submit', handleSecretaryPasswordSubmit);
+
+  const doctorForm = document.getElementById('doctor-password-form');
+  if (doctorForm) doctorForm.addEventListener('submit', handleDoctorPasswordSubmit);
+
+  const serviceForm = document.getElementById('service-form') || document.getElementById('service-booking-form');
+  if (serviceForm) serviceForm.addEventListener('submit', handleServiceRequest);
+
+  const adoptionForm = document.getElementById('adoption-form');
+  if (adoptionForm) adoptionForm.addEventListener('submit', handleAdoptionRequest);
+
+  const doctorPetSelect = document.getElementById('doctor-pet-select');
+  if (doctorPetSelect) doctorPetSelect.addEventListener('change', renderDoctorHistory);
+
+  const medicationForm = document.getElementById('medication-form');
+  if (medicationForm) medicationForm.addEventListener('submit', handleMedicationRequest);
+
+  function addCloseButtonsToPanels() {
+    document.querySelectorAll('.access-panel').forEach((panel) => {
+      if (panel.querySelector('.panel-close')) return;
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'panel-close';
+      closeButton.textContent = '×';
+      closeButton.addEventListener('click', () => {
+        panel.classList.add('hidden');
+        panel.style.display = 'none';
+      });
+      panel.prepend(closeButton);
+    });
+  }
+
+  addCloseButtonsToPanels();
+
+  // Vinculación de botones de agendar en servicio.html
+  const scheduleButtons = document.querySelectorAll('.schedule-service-btn');
+  scheduleButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const serviceName = this.getAttribute('data-service');
+      if(typeof window.openServiceForm === 'function') {
+        window.openServiceForm(serviceName);
+      }
+    });
+  });
+
+  const serviceCards = document.querySelectorAll('.card-flip');
+  serviceCards.forEach((card) => {
+    card.addEventListener('click', (event) => {
+      if (event.target.closest('.schedule-service-btn')) return;
+      card.classList.toggle('flipped');
+    });
+  });
+
+  // Botón Cancelar del modal de servicios
+  const cancelServiceBtn = document.getElementById('service-cancel');
+  if (cancelServiceBtn) {
+    cancelServiceBtn.addEventListener('click', clearClientForms);
+  }
+
+  const closeServiceBtn = document.getElementById('service-modal-close');
+  if (closeServiceBtn) {
+    closeServiceBtn.addEventListener('click', clearClientForms);
+  }
+});

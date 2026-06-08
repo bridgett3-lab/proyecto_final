@@ -1,0 +1,182 @@
+* {
+  box-sizing: border-box;
+}
+
+.content-footer {
+  width: 100%;
+  margin: 56px 0 0;
+  padding: 34px 22px 26px;
+  background: linear-gradient(180deg, #ffffff 0%, #f3fbfc 48%, #eaf8fb 100%);
+  color: #17383b;
+  border-top: 1px solid rgba(6, 178, 153, 0.14);
+  box-shadow: 0 -14px 34px rgba(15, 54, 45, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.content-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(1120px, calc(100% - 44px));
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #7fe8ef;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.logo-footer,
+.sub-content {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.logo-footer {
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 22px;
+  text-align: center;
+}
+
+.logo-footer h1 {
+  margin: 0;
+  color: #2f4b50;
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  line-height: 1.25;
+  font-weight: 500;
+}
+
+.logo-footer b {
+  display: block;
+  color: #047886;
+  font-weight: 800;
+}
+
+.sub-content {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto minmax(240px, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(6, 178, 153, 0.16);
+}
+
+.correo-footer,
+.telefono-footer {
+  color: #415a63;
+}
+
+.correo-footer h4,
+.telefono-footer h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+.telefono-footer {
+  text-align: right;
+}
+
+.redes-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 132px;
+}
+
+.redes-footer a {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid rgba(6, 178, 153, 0.16);
+  box-shadow: 0 10px 20px rgba(15, 54, 45, 0.08);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.redes-footer a:hover {
+  background: #eefbfb;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px rgba(15, 54, 45, 0.12);
+}
+
+.redes-footer img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+}
+
+.whatsapp-button {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #25d366;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.whatsapp-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.26);
+}
+
+.whatsapp-button img {
+  width: 32px;
+  height: auto;
+}
+
+@media (max-width: 820px) {
+  .content-footer {
+    margin-top: 42px;
+    padding: 30px 18px 24px;
+  }
+
+  .sub-content {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .telefono-footer {
+    text-align: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .logo-footer h1 {
+    font-size: 1.1rem;
+  }
+
+  .correo-footer h4,
+  .telefono-footer h4 {
+    font-size: 0.88rem;
+    overflow-wrap: anywhere;
+  }
+
+  .whatsapp-button {
+    width: 54px;
+    height: 54px;
+    right: 16px;
+    bottom: 16px;
+  }
+}

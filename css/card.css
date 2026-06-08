@@ -1,0 +1,148 @@
+/*aqui empiezan los estilos de las cards */
+
+.content-card {
+    max-width: 1200px; /*este es para aplicar el ancho maximo del contenedor */
+    margin: auto; /*este es para aplicar el margen del contenedor */
+    margin-top: 20px; /* este es para asignarle la margen en la parte de rriba */
+    perspective: 1000px; 
+    display: flex; /*este es para que los contenedores se organicen de forma horizontal */
+    justify-content: center; /* este es para centrar de forma vertical */
+    align-items: center; /* este es para que se centre de forma horizontal */
+    flex-wrap: wrap; /* este es para que cuando la pagina sea haga mas pequeña se organice en filas */
+    padding-bottom: 15px;
+    
+}
+
+.titulo{
+        color: white;
+        text-shadow: 1px 1px 2px black, 0 0 25px blue, 0 0 5px darkblue;
+        padding-top: 20px;
+        text-align: center;
+}
+
+/* --- Contenedor Principal de la Tarjeta --- */
+.card-flip {
+    margin: 10px;
+    perspective: 1000px;
+    animation: float 7s ease-in-out infinite;
+}
+
+/* Efecto de Giro al pasar el mouse o activar la clase */
+.card-flip:hover .card,
+.card-flip.flipped .card {
+    transform: rotateY(180deg) scale(1.04);
+}
+
+/* --- Cuerpo de la Tarjeta (Estructura 3D) --- */
+.card {
+    width: 250px;
+    height: 400px;
+    background: rgb(167, 183, 221);
+    position: relative;
+    transform: rotateY(0deg);
+    transform-style: preserve-3d;
+    transition: transform 600ms;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+    border-radius: 24px;
+    /* Se eliminó overflow:hidden para permitir que el plano 3D funcione y los botones sean clickeables */
+}
+
+/* Animación de flotado */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* --- Caras Internas (Común para Delantera y Trasera) --- */
+.card-delantera,
+.card-atras {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    backface-visibility: hidden; /* Oculta la otra cara cuando gira */
+    transform-style: preserve-3d;
+    transition: opacity 0.4s ease;
+    border-radius: 24px;         /* El redondeado se aplica aquí para mantener las esquinas */
+    overflow: hidden;            /* Asegura que las imágenes y fondos respeten las esquinas curvas */
+}
+
+/* Cara Delantera */
+.card-delantera {
+    transform: rotateY(0deg);
+    background-size: cover;
+    background-position: center;
+    opacity: 1;
+    z-index: 2;
+}
+
+/* Cara Trasera */
+.card-atras {
+    transform: rotateY(180deg);
+    background: white;
+    opacity: 0;
+    z-index: 1;
+    pointer-events: auto; /* Permite explícitamente la interacción con botones */
+}
+
+/* --- Control de Capas y Visibilidad durante el Hover --- */
+.card-flip:hover .card-delantera,
+.card-flip.flipped .card-delantera {
+    opacity: 0;
+    pointer-events: none; /* Desactiva la capa delantera para que no bloquee el clic */
+    z-index: 1;
+}
+
+.card-flip:hover .card-atras,
+.card-flip.flipped .card-atras {
+    opacity: 1;
+    z-index: 5; /* Pasa la cara trasera al frente absoluto al completarse el giro */
+}
+
+/* --- Contenidos de las Tarjetas (Efecto Pop-out) --- */
+.contenido-card-delantera {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    transform: translateZ(65px);
+}
+
+.contenido-card-atras {
+    padding: 20px;
+    text-align: center;
+    transform: translateZ(65px);
+}
+
+.contenido-card-atras p {
+    margin-top: 30px;
+    font-size: 20px;
+}
+
+.contenido-card-atras input {
+    padding: 10px 15px;
+    margin-top: 10px;
+    text-align: center;
+    font-size: 15px;
+    cursor: pointer;
+    border: none;
+    color: black;
+    background: rgb(64, 121, 243);
+    box-shadow: 1px 1px 20px -10px black;
+    border-radius: 10px;
+
+}
+
+.bg {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.5);
+}

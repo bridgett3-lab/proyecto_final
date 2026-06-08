@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Chrome">
+    <meta name="description" content="Página web del Centro Veterinario Pet-Alexander Von Humboldt">
+    <meta name="keywords" content="Medicina, Mascota, Concentrados, snacks">
+    <meta name="author" content="Salome Ramirez, Bridgette Torro, sergio David Areiza, Juan esteban Ospina, Juan Estevan caicedo">
+    <meta name="application-name" content="PET-Alexander Von Humboldt">
+    <meta name="generator" content="VSCode">
+    <title>PET-Alexander Von Humboldt-Servicios</title>
+    <link rel="stylesheet" type="text/css" href="css/header.css">
+    <link rel="stylesheet" type="text/css" href="css/card.css">
+    <link rel="stylesheet" type="text/css" href="css/cuerpo.css">
+    <link rel="stylesheet" type="text/css" href="css/footer.css">
+    <link rel="stylesheet" type="text/css" href="css/auth.css">
+    <!--Fuente de Google-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+</head>
+<body data-page="servicio">
+
+<!--aqui empieza el header-->
+  <header>
+
+    <div class="header_content">
+
+       <div class="img-logo">
+            <img src="img/logo.png" class="circular-logo" alt="Logo">
+        </div>
+
+        <div class="logo">
+            <h1 class="roboto-thin"><b>PET-Alexander Von Humboldt</b> Centro Veterinario</h1>
+        </div>
+
+        <div class="menu">
+                <nav>
+                    <ul>
+                        <li><a href="index.html">Inicio</a></li>
+                        <li><a href="servicio.html">Servicio</a></li>
+                        <li id="nav-crud"><a href="crud.html">Crud</a></li>
+                        <li id="nav-auth"><a href="login.html">Login</a></li>
+                    </ul>
+            </nav>
+        </div>
+
+    </div>
+
+    <div id="icono-desple">
+      <img src="img/menu-desple.png" alt="menu desplegable">
+
+    </div>
+
+  </header>
+
+  <!--aqui termina el header-->
+
+  <section class="service-intro">
+    <div class="service-text">
+      <h2>Conoce nuestros servicios especializados</h2>
+      <p>Brindamos atención veterinaria completa con cuidados personalizados y el cariño que tu mascota merece.</p>
+    </div>
+    <div class="service-image">
+      <img src="img/service.jpg" alt="Equipo veterinario y mascotas felices">
+    </div>
+  </section>
+
+  <!--aqui empieza la portada-->
+
+  <main class="foto-portada">
+    <article class="info-portada">
+        <h1>Trabajamos para Brindarle lo Mejor a tu mascota</h1>
+        <p>nos comprometemos a ofrecer el mejor cuidado veterinario para tu querido compañero de vida.</p>
+    </article>
+  </main>
+
+  <!--aqui termina la portada-->
+  <!--Aquí Empieza el contenido principal-->
+  <!--aqui empieza el contenido de las cards-->
+  <div class="titulo">
+    <h1>Servicios Centro Veterinario</h1>
+  </div>
+
+  <div class="content-card">
+    <div class="card-flip">
+      <div class="card">
+        <div class="card-delantera" style="background-image: url(img/Ecografia.jpg);">
+          <div class="bg"></div>
+          <div class="contenido-card-delantera">
+            <h1>Servicio de Ecografía para las Mascotas</h1>
+          </div>
+        </div>
+        <div class="card-atras">
+          <div class="contenido-card-atras">
+            <h1>Ecografía</h1>
+            <p>La ecografía es una técnica de diagnóstico muy útil que ofrece información sobre el estado de los órganos internos de forma no invasiva.</p>
+            <button type="button" class="primary schedule-service-btn" data-service="Ecografías">Agendar servicio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-flip">
+      <div class="card">
+        <div class="card-delantera" style="background-image: url(img/peluqueria.jpg);">
+          <div class="bg"></div>
+          <div class="contenido-card-delantera">
+            <h1>Servicio de Peluquería para las Mascotas</h1>
+          </div>
+        </div>
+        <div class="card-atras">
+          <div class="contenido-card-atras">
+            <h1>Peluquería</h1>
+            <p>Ofrecemos cortes, baños y tratamientos estéticos y terapéuticos para perros y gatos con el mejor cuidado.</p>
+            <button type="button" class="primary schedule-service-btn" data-service="Peluquería">Agendar servicio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-flip">
+      <div class="card">
+        <div class="card-delantera" style="background-image: url(img/medicina_preventiva.png);">
+          <div class="bg"></div>
+          <div class="contenido-card-delantera">
+            <h1>Medicina Preventiva para todo tipo de Mascotas</h1>
+          </div>
+        </div>
+        <div class="card-atras">
+          <div class="contenido-card-atras">
+            <h1>Medicina</h1>
+            <p>Te ayudamos a prevenir enfermedades con planes vacunales y desparasitación adecuados para tu mascota.</p>
+            <button type="button" class="primary schedule-service-btn" data-service="Medicina">Agendar servicio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-flip">
+      <div class="card">
+        <div class="card-delantera" style="background-image: url(img/medicamentos.jpg);">
+          <div class="bg"></div>
+          <div class="contenido-card-delantera">
+            <h1>Solicitud de Medicamentos</h1>
+          </div>
+        </div>
+        <div class="card-atras">
+          <div class="contenido-card-atras">
+            <h1>Medicamentos</h1>
+            <p>Solicita medicamentos para tu mascota de forma rápida y recibe respuesta del centro.</p>
+            <button type="button" class="primary schedule-service-btn" data-service="Medicamento">Solicitar medicamento</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="card-flip">
+      <div class="card">
+        <div class="card-delantera" style="background-image: url(img/mascota.jpg);">
+          <div class="bg"></div>
+          <div class="contenido-card-delantera">
+            <h1>Radiología Digital para Mascotas</h1>
+          </div>
+        </div>
+        <div class="card-atras">
+          <div class="contenido-card-atras">
+            <h1>Radiología</h1>
+            <p>Realizamos radiografías con equipos modernos que cuidan la salud de tu mascota y ofrecen resultados rápidos.</p>
+            <button type="button" class="primary schedule-service-btn" data-service="Radiografías">Agendar servicio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-flip">
+      <div class="card">
+        <div class="card-delantera" style="background-image: url(img/adopción.jpg);">
+          <div class="bg"></div>
+          <div class="contenido-card-delantera">
+            <h1>Adopción de Animales de Compañía</h1>
+          </div>
+        </div>
+        <div class="card-atras">
+          <div class="contenido-card-atras">
+            <h1>Adopción</h1>
+            <p>Encuentra el compañero ideal y solicita una adopción responsable a través de nuestro proceso seguro.</p>
+            <button type="button" class="primary schedule-service-btn" data-service="Adopción">Agendar servicio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-flip">
+      <div class="card">
+        <div class="card-delantera" style="background-image: url(img/Guarderia.jpg);">
+          <div class="bg"></div>
+          <div class="contenido-card-delantera">
+            <h1>Guardería Canina y Felina</h1>
+          </div>
+        </div>
+        <div class="card-atras">
+          <div class="contenido-card-atras">
+            <h1>Guardería</h1>
+            <p>Tu mascota estará en un ambiente seguro y cómodo mientras recibe atención especializada durante su estancia.</p>
+            <button type="button" class="primary schedule-service-btn" data-service="Guardería canina">Agendar servicio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<section class="service-actions">
+  <div class="titulo">
+    <h1>Servicios disponibles</h1>
+    <p>Selecciona el servicio que necesites y completa el formulario de agendamiento.</p>
+  </div>
+  <div id="service-login-message" class="message"></div>
+</section>
+
+<div id="service-modal" class="service-modal hidden">
+  <div class="service-modal-content">
+    <button type="button" class="service-modal-close" id="service-modal-close">×</button>
+    <h3>Agendar servicio</h3>
+    <form id="service-booking-form">
+      <div class="form-row">
+        <label for="service-type">Servicio</label>
+        <input type="text" id="service-type" name="service-type" readonly>
+      </div>
+      <div class="form-row">
+        <label for="service-pet-name">Nombre de la mascota</label>
+        <input type="text" id="service-pet-name" name="service-pet-name" placeholder="Nombre de la mascota" required>
+      </div>
+      <div class="form-row">
+        <label for="service-phone">Teléfono de contacto</label>
+        <input type="tel" id="service-phone" name="service-phone" placeholder="Ej. 3001234567" required>
+      </div>
+      <div class="form-row">
+        <label for="service-professional">Profesional</label>
+        <select id="service-professional" name="service-professional" required>
+          <option value="">Selecciona un profesional</option>
+          <option value="Dr. Alejandro">Dr. Alejandro</option>
+          <option value="Dra. Camila">Dra. Camila</option>
+          <option value="Dr. Andrés">Dr. Andrés</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label id="service-detail-label" for="service-detail">Detalle del servicio</label>
+        <textarea id="service-detail" name="service-detail" rows="4" placeholder="Describe lo que necesitas" required></textarea>
+      </div>
+      <div class="form-row">
+        <label for="service-date">Fecha preferida</label>
+        <input type="date" id="service-date" name="service-date" required>
+      </div>
+      <div class="modal-actions">
+        <button class="primary" type="submit">Enviar solicitud</button>
+        <button class="secondary" type="button" id="service-cancel">Cancelar</button>
+      </div>
+      <div id="service-message" class="message"></div>
+    </form>
+  </div>
+</div>
+
+<!--aqui termina el contenido de las cards-->
+<!--Aquí termina el contenido principal-->
+
+<!--aqui empieza el footer-->
+  <footer class="content-footer">
+
+    <div class="logo-footer">
+      <h1><b>PET-Alexander Von Humboldt</b> Centro Veterinario</h1>
+    </div>
+
+    <div class="sub-content">
+      
+      <div class="correo-footer">
+        <h4>correo: petalexandervonhumboldt@gmail.com</h4>
+      </div>
+
+      <div class="redes-footer">
+        <a href="#"> <img src="img/facebook.png" alt="facebook"></a>
+        <a href="#"> <img src="img/instagram.png" alt="instagram"></a>
+       
+      </div>
+
+      <div class="telefono-footer">
+        <h4>Telefonos: +57 317 386 3343 - +57 322 437 7925</h4>
+      </div>
+
+    </div>
+  </footer>
+  <!--aqui termina el footer-->
+
+  <a class="whatsapp-button" href="https://wa.me/573173863343" target="_blank" rel="noreferrer">
+    <img src="wasa.png" alt="WhatsApp">
+  </a>
+  <script src="auth.js"></script>
+</body>
+</html>

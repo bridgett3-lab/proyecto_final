@@ -1,0 +1,18 @@
+*{
+    margin: 0; /*este es para darle marge a la pagina en general*/
+    padding: 0;
+    box-sizing: border-box;
+    font-family: sans-serif;
+    text-decoration: none;
+
+}
+
+.prueba {
+    margin: auto;
+    width: 90%;
+    height: 800px;
+    background-image: url(../img/prueba.svg);
+    background-size: 80% 100%;
+    background-repeat: no-repeat;
+    
+}

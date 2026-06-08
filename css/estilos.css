@@ -1,0 +1,114 @@
+
+
+.titformu{
+  background-color:#246355;
+  color:bisque;
+  width: 43.5%;
+  display: block;
+  margin: auto;
+}
+
+
+
+.regresar:link, .regresar:visited {
+  background-color:#7FE8EF;
+  color: black;
+  padding: 12px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  border-radius: 5px;
+  width: 25%;
+  margin: auto;
+}
+
+.regresar:hover, .regresar:active {
+  background-color: blue;
+  border-radius: 5px;
+}
+
+h1 {
+  text-align: center;
+  margin-top:20px;
+}
+
+.tith1{
+  margin-top: 20px;
+}
+
+.titformu{
+  background-color:#7FE8EF ;
+  color:black;
+}
+
+form{
+  width: 40%;
+  margin: auto;
+  margin-bottom:20px;
+  padding: 25px;
+  background-color: gray;
+  color:black;
+}
+
+input[type=text], select {
+  width: 80%;
+  padding: 12px 20px;
+  margin: 20px auto;
+  display: block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  background-color: white;
+  color: black;
+}
+
+input[type=date], select {
+  width: 80%;
+  padding: 12px 20px;
+  margin: auto;
+  display: block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  background-color: white;
+  color: black;
+}
+
+button[type=submit] {
+  width: 25%;
+  background-color: #7FE8EF;
+  color: black;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+button[type=submit]:hover {
+  background-color: blue;
+}
+
+button[type=reset] {
+  width: 25%;
+  background-color:#7FE8EF;
+  color: black;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+button[type=reset]:hover {
+  background-color: blue;
+}
+
+div{
+  text-align: center;
+}
+
+
+
