@@ -118,7 +118,7 @@ function savePatients(patients) {
 function hasCrudAccess() {
   const sessionAccess = sessionStorage.getItem(CRUD_ACCESS_KEY) === 'true';
   const user = getSessionUser();
-  return sessionAccess || (user && (user.role === 'Administrador' || user.role === 'Doctor'));
+  return sessionAccess || (user && user.role === 'Administrador');
 }
 
 function setCrudAccess() {
@@ -253,22 +253,6 @@ function updateNav() {
       homeUserText.textContent = '';
     }
   }
-
-  const accountGreeting = document.getElementById('account-greeting');
-  if (accountGreeting) {
-    if (user) {
-      if (user.role === 'Doctor') {
-        const title = user.username.trim().toLowerCase().endsWith('a') ? 'Dra.' : 'Dr.';
-        accountGreeting.textContent = `Bienvenido(a) ${title} ${user.username}`;
-      } else if (user.role === 'Cliente') {
-        accountGreeting.textContent = `Bienvenido(a) ${user.username}`;
-      } else {
-        accountGreeting.textContent = `Bienvenido(a) ${user.username}`;
-      }
-    } else {
-      accountGreeting.textContent = 'Mi cuenta';
-    }
-  }
 }
 
 function handleLogout(event) {
@@ -314,47 +298,25 @@ function handleDoctorPasswordSubmit(event) {
   const message = document.getElementById('doctor-password-message');
   const password = passwordInput ? passwordInput.value : '';
 
-  if (!password) {
+  if (password !== DOCTOR_ACCESS_PASSWORD) {
     if (message) {
       message.className = 'message error';
-      message.textContent = 'Debes escribir la contraseña.';
+      message.textContent = 'Contraseña incorrecta. Intenta de nuevo.';
     }
-    return;
-  }
-
-  const users = getUsers();
-  const matchedDoctor = users.find(u => u.role === 'Doctor' && u.password === password);
-
-  if (matchedDoctor) {
-    setSessionUser({ username: matchedDoctor.username, role: 'Doctor' });
-    setCrudAccess();
-    updateNav();
-    if (message) {
-      message.className = 'message success';
-      message.textContent = `Bienvenido ${matchedDoctor.username}. Acceso autorizado.`;
-    }
-    window.location.href = 'crud.html';
-    return;
-  }
-
-  if (password === DOCTOR_ACCESS_PASSWORD) {
-    const doctorUser = users.find(u => u.role === 'Doctor');
-    const doctorName = doctorUser ? doctorUser.username : 'Médico';
-    setSessionUser({ username: doctorName, role: 'Doctor' });
-    setCrudAccess();
-    updateNav();
-    if (message) {
-      message.className = 'message success';
-      message.textContent = 'Acceso autorizado. Bienvenido al panel médico.';
-    }
-    window.location.href = 'crud.html';
     return;
   }
 
   if (message) {
-    message.className = 'message error';
-    message.textContent = 'Contraseña incorrecta. Intenta de nuevo.';
+    message.className = 'message success';
+    message.textContent = 'Acceso autorizado. Mostrando historiales médicos.';
   }
+  setSessionUser({ username: 'Médico', role: 'Doctor' });
+  setCrudAccess();
+  updateNav();
+  showPanel('doctor-panel');
+  updateDoctorHistorySelect();
+  renderDoctorHistory();
+  if (passwordInput) passwordInput.value = '';
 }
 
 function handleCrudPasswordSubmit(event) {
@@ -903,71 +865,6 @@ function renderDoctorHistory() {
   renderPatientHistory();
 }
 
-// Rellena el panel de cuenta en la página principal
-function populateAccountPanel() {
-  const user = getSessionUser();
-  if (!user) return;
-
-  const ownerName = document.getElementById('account-owner-name');
-  const userRole = document.getElementById('account-user-role');
-  const accountGreeting = document.getElementById('account-greeting');
-  const petsList = document.getElementById('account-pets-list');
-  const totalAppointments = document.getElementById('account-total-appointments');
-  const totalServices = document.getElementById('account-total-services');
-  const totalMedications = document.getElementById('account-total-medications');
-  const lastRequest = document.getElementById('account-last-request');
-
-  if (ownerName) ownerName.textContent = user.username;
-  if (userRole) userRole.textContent = user.role;
-
-  const patients = getPatients().filter(p => p.dueno === user.username);
-  if (petsList) {
-    petsList.innerHTML = '';
-    if (patients.length === 0) {
-      petsList.innerHTML = '<li>No hay mascotas registradas</li>';
-    } else {
-      patients.forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = p.nombre;
-        petsList.appendChild(li);
-      });
-    }
-  }
-
-  const requests = getClientRequests().filter(r => r.user === user.username);
-  if (totalAppointments) totalAppointments.textContent = String(requests.filter(r => r.type === 'cita').length);
-  if (totalServices) totalServices.textContent = String(requests.filter(r => r.type === 'servicio' || (r.service && r.service !== 'Medicamento')).length);
-  if (totalMedications) totalMedications.textContent = String(requests.filter(r => r.type === 'medicamento' || r.service === 'Medicamento').length);
-  if (lastRequest) lastRequest.textContent = requests.length ? `${requests[requests.length-1].service || requests[requests.length-1].type} (${requests[requests.length-1].date || requests[requests.length-1].createdAt})` : '-';
-
-  const doctorDetails = document.getElementById('doctor-account-details');
-  if (doctorDetails) {
-    if (user.role === 'Doctor') {
-      doctorDetails.classList.remove('hidden');
-      doctorDetails.style.display = 'block';
-      const assigned = getClientRequests().filter(r => r.professional === user.username);
-      const doctorTotalAssigned = document.getElementById('doctor-total-assigned');
-      const doctorTotalServices = document.getElementById('doctor-total-services');
-      const doctorPending = document.getElementById('doctor-pending-count');
-      if (doctorTotalAssigned) doctorTotalAssigned.textContent = String(assigned.filter(r => r.type === 'cita').length);
-      if (doctorTotalServices) doctorTotalServices.textContent = String(assigned.filter(r => r.type === 'servicio').length);
-      if (doctorPending) doctorPending.textContent = String(assigned.filter(r => r.status === 'No atendido').length);
-      const doctorTable = document.getElementById('doctor-account-table-body');
-      if (doctorTable) {
-        doctorTable.innerHTML = '';
-        assigned.forEach(r => {
-          const row = document.createElement('tr');
-          row.innerHTML = `<td>${r.petName}</td><td>${r.service}</td><td>${r.date || '-'}</td><td>${r.status}</td>`;
-          doctorTable.appendChild(row);
-        });
-      }
-    } else {
-      doctorDetails.classList.add('hidden');
-      doctorDetails.style.display = 'none';
-    }
-  }
-}
-
 function renderAppointmentsPanel() {
   const tableBody = document.getElementById('appointments-table-body');
   if (!tableBody) return;
@@ -994,15 +891,16 @@ function renderAppointmentsPanel() {
   });
 }
 
+// CORRECCIÓN EXTRA: Función requerida por tu crud.html que estaba faltando en tus llamadas
 function renderDoctorRequests() {
   const tableBody = document.getElementById('doctor-request-table-body');
   if (!tableBody) return;
 
-  const requests = getClientRequests().filter((r) => r.type === 'cita');
+  const requests = getClientRequests().filter((r) => r.type === 'cita' || r.type === 'servicio');
   tableBody.innerHTML = '';
 
   if (requests.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="6">No hay solicitudes médicas.</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="6">No hay solicitudes de citas médicas.</td></tr>';
     return;
   }
 
@@ -1010,19 +908,20 @@ function renderDoctorRequests() {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td><b>${req.petName}</b></td>
-      <td>${req.detail || req.service || '-'}</td>
-      <td>${req.date || '-'}</td>
+      <td>${req.detail}</td>
+      <td>${req.date}</td>
       <td>${req.status}</td>
       <td>${req.hospitalized ? 'Sí' : 'No'}</td>
-      <td class="action-buttons">
+      <td>
         <button type="button" class="primary" onclick="acceptDoctorRequest('${req.id}')">Aceptar</button>
-        <button type="button" class="delete" style="background-color:#ff4d4d; color:white; border:none; cursor:pointer;" onclick="rejectDoctorRequest('${req.id}')">Rechazar</button>
+        <button type="button" class="secondary" onclick="rejectDoctorRequest('${req.id}')">Rechazar</button>
       </td>
     `;
     tableBody.appendChild(row);
   });
 }
 
+// CORRECCIÓN EXTRA: Función requerida por tu crud.html que estaba faltando en tus llamadas
 function renderMedicationRequests() {
   const tableBody = document.getElementById('medication-request-table-body');
   if (!tableBody) return;
@@ -1031,199 +930,492 @@ function renderMedicationRequests() {
   tableBody.innerHTML = '';
 
   if (requests.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="9">No hay solicitudes de medicamentos.</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="8">No hay solicitudes de medicamentos.</td></tr>';
     return;
   }
 
   requests.forEach((req) => {
-    const stockItem = getStock().find((item) => normalizeText(item.name) === normalizeText(req.item || req.service || ''));
-    const available = stockItem ? (stockItem.quantity > 0 ? 'Disponible' : 'Sin stock') : 'Revisar';
-    const expiry = stockItem ? stockItem.expiry : '-';
-
     const row = document.createElement('tr');
+    const stockInfo = getMedicationAvailability(req);
+    const availability = req.availability || stockInfo.availability || 'Pendiente';
+    const availabilityKey = normalizeText(availability).replace(/\s+/g, '-');
+    const stockLeft = stockInfo.stockLeft;
+    const expiry = stockInfo.expiry || '-';
     row.innerHTML = `
       <td><b>${req.petName}</b></td>
-      <td>${req.item || '-'}</td>
-      <td>${req.amount || '-'}</td>
-      <td>${available}</td>
-      <td>${stockItem ? stockItem.quantity : '-'}</td>
+      <td>${req.item || req.detail || 'Medicamento Prescrito'}</td>
+      <td>${req.amount || 1}</td>
+      <td><span class="status-badge ${availabilityKey}">${availability}</span></td>
+      <td>${stockLeft}</td>
       <td>${expiry}</td>
       <td>${new Date(req.createdAt).toLocaleDateString()}</td>
-      <td>${req.status}</td>
+      <td><span class="status-badge ${normalizeText(req.status || 'Pendiente').replace(/\s+/g, '-')}">${req.status || 'Pendiente'}</span></td>
       <td class="action-buttons">
-        <button type="button" class="primary" onclick="fulfillMedicationRequest('${req.id}')">Entregar</button>
-        <button type="button" class="delete" style="background-color:#ff4d4d; color:white; border:none; cursor:pointer;" onclick="rejectMedicationRequest('${req.id}')">Rechazar</button>
+        <button type="button" class="primary" onclick="acceptDoctorRequest('${req.id}')">Aceptar</button>
+        <button type="button" class="secondary" onclick="rejectDoctorRequest('${req.id}')">Rechazar</button>
       </td>
     `;
     tableBody.appendChild(row);
   });
 }
 
-function fulfillMedicationRequest(id) {
+function markMedicationAvailable(id) {
   const requests = getClientRequests();
-  const request = requests.find((r) => r.id === id);
+  const request = requests.find((req) => req.id === id);
   if (!request) return;
-  request.status = 'Entregado';
-  saveClientRequests(requests);
-  initCrudPageData();
-}
 
-function rejectMedicationRequest(id) {
-  const requests = getClientRequests();
-  const request = requests.find((r) => r.id === id);
-  if (!request) return;
-  request.status = 'Rechazado';
-  saveClientRequests(requests);
-  initCrudPageData();
-}
+  const stock = getStock();
+  let stockItem = findMedicationStockItem(request, stock);
+  const medicineName = request.item || request.detail || 'Medicamento';
+  const currentQuantity = stockItem ? Number(stockItem.quantity) || 0 : Number(request.amount) || 1;
+  const amountText = prompt(`Cantidad disponible para ${medicineName}:`, currentQuantity > 0 ? currentQuantity : (Number(request.amount) || 1));
+  if (amountText === null) return;
 
-function handlePatientFormSubmit(event) {
-  event.preventDefault();
-  const idInput = document.getElementById('patient-id');
-  const nameInput = document.getElementById('patient-name');
-  const speciesInput = document.getElementById('patient-species');
-  const ageInput = document.getElementById('patient-age');
-  const ownerInput = document.getElementById('patient-owner');
-  const statusInput = document.getElementById('patient-status');
-  const observationsInput = document.getElementById('patient-observations');
-  const message = document.getElementById('form-message');
-
-  const nombre = nameInput ? nameInput.value.trim() : '';
-  const especie = speciesInput ? speciesInput.value.trim() : '';
-  const edad = ageInput ? ageInput.value.trim() : '';
-  const dueno = ownerInput ? ownerInput.value.trim() : '';
-  const estado = statusInput ? statusInput.value : '';
-  const observaciones = observationsInput ? observationsInput.value.trim() : '';
-
-  if (!nombre || !especie || !edad || !dueno || !estado) {
-    if (message) {
-      message.className = 'message error';
-      message.textContent = 'Completa todos los campos del paciente.';
-    }
+  const quantity = Number(amountText);
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    alert('Ingresa una cantidad mayor a 0 para marcarlo como disponible.');
     return;
   }
+
+  const expiry = prompt(`Fecha de vencimiento para ${medicineName} (AAAA-MM-DD):`, stockItem ? (stockItem.expiry || '') : '');
+  if (expiry === null) return;
+
+  if (!stockItem) {
+    stockItem = {
+      id: 'stock-' + Date.now(),
+      name: medicineName,
+      quantity,
+      expiry: expiry.trim() || '-'
+    };
+    stock.push(stockItem);
+  } else {
+    stockItem.quantity = quantity;
+    stockItem.expiry = expiry.trim() || stockItem.expiry || '-';
+  }
+
+  request.availability = 'Disponible';
+  request.stockLeft = quantity;
+  request.expiry = stockItem.expiry;
+  request.unavailable = false;
+  request.status = request.status === 'Rechazado' ? 'No atendido' : request.status;
+  request.phoneMessage = 'El medicamento ya se encuentra disponible.';
+  request.whatsappMessage = '';
+
+  saveStock(stock);
+  saveClientRequests(requests);
+  initCrudPageData();
+}
+
+function showWhatsAppDebug(id) {
+  const requests = getClientRequests();
+  const req = requests.find((r) => r.id === id);
+  if (!req) return alert('No se encontró la solicitud para ver detalles.');
+  const debug = req.whatsappDebug || 'No hay detalles disponibles.';
+  // Mostrar en modal simple o alert (suficiente para depuración local)
+  try {
+    const parsed = JSON.parse(debug);
+    alert('Detalles del envío:\n' + JSON.stringify(parsed, null, 2));
+  } catch (e) {
+    alert('Detalles del envío:\n' + debug);
+  }
+}
+
+function renderDoctorReports() {
+  const reportSummary = document.getElementById('report-summary');
+  if (!reportSummary) return;
 
   const patients = getPatients();
-  const isEdit = idInput && idInput.value;
+  const total = patients.length;
+  const alta = patients.filter((p) => p.estado === 'Alta' || p.status === 'Alta').length;
+  const revision = patients.filter((p) => p.estado === 'Revisión' || p.status === 'Revisión').length;
+  const activos = patients.filter((p) => p.estado === 'Activo' || p.status === 'Activo').length;
 
-  if (isEdit) {
-    const patientIndex = patients.findIndex((patient) => patient.id === idInput.value);
-    if (patientIndex !== -1) {
-      patients[patientIndex] = {
-        ...patients[patientIndex],
-        nombre,
-        especie,
-        edad,
-        dueno,
-        estado,
-        observaciones
-      };
-      savePatients(patients);
-      if (message) {
-        message.className = 'message success';
-        message.textContent = 'Paciente actualizado correctamente.';
-      }
-    }
-  } else {
-    patients.push({
-      id: 'patient-' + Date.now(),
-      nombre,
-      especie,
-      edad,
-      dueno,
-      estado,
-      observaciones
-    });
-    savePatients(patients);
-    if (message) {
-      message.className = 'message success';
-      message.textContent = 'Paciente registrado correctamente.';
-    }
-  }
-
-  clearPatientForm();
-  initCrudPageData();
+  reportSummary.textContent = `Hoy se revisaron ${total} mascotas, ${alta} de alta, ${revision} en revisión, ${activos} activos.`;
 }
 
-function downloadReport() {
+function downloadDoctorReport(clearAfterExport = false) {
   const requests = getClientRequests();
-  if (!requests.length) {
-    alert('No hay datos para exportar.');
+  if (!requests || requests.length === 0) {
+    alert('No hay solicitudes para exportar.');
     return;
   }
 
-  const csvRows = [
-    ['ID', 'Tipo', 'Servicio', 'Mascota', 'Profesional', 'Fecha', 'Estado', 'Creado']
+  const rows = [
+    ['Tipo', 'Servicio', 'Paciente', 'Detalle', 'Profesional', 'Fecha', 'Teléfono', 'Estado', 'Registrado']
   ];
 
   requests.forEach((req) => {
-    csvRows.push([
-      req.id,
-      req.type,
-      req.service || req.item || '-',
-      req.petName || '-',
-      req.professional || '-',
-      req.date || '-',
-      req.status || '-',
-      req.createdAt ? new Date(req.createdAt).toLocaleString() : '-'
+    rows.push([
+      req.type || '',
+      req.service || '',
+      req.petName || '',
+      req.detail || '',
+      req.professional || '',
+      req.date || '',
+      req.phone || '',
+      req.status || '',
+      new Date(req.createdAt).toLocaleString()
     ]);
   });
 
-  const csvContent = csvRows.map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const csvContent = '\uFEFF' + rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\r\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  const downloadUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = url;
-  link.download = 'reporte_solicitudes_pet_humboldt.csv';
+  link.href = downloadUrl;
+  link.download = `pet_humboldt_reporte_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(downloadUrl);
+
+  if (clearAfterExport) {
+    clearClientRequestsAfterExport();
+  }
 }
 
-function downloadAndClearReport() {
-  downloadReport();
+function clearClientRequestsAfterExport() {
+  if (!confirm('¿Deseas borrar todas las solicitudes después de exportarlas? Esta acción no se puede deshacer.')) {
+    return;
+  }
   localStorage.removeItem(STORAGE_CLIENT_REQUESTS_KEY);
   initCrudPageData();
 }
 
 function initCrudPageData() {
-  if (!hasCrudAccess()) {
+  renderPatients();
+  renderStock();
+  updatePatientHistorySelect();
+  renderPatientHistory();
+  renderDoctorRequests();
+  renderMedicationRequests();
+  renderAppointmentsPanel();
+  renderDoctorReports();
+}
+
+// ==========================================
+// 8. ASIGNACIÓN E INICIALIZACIÓN DEL CRUD
+// ==========================================
+function initCrudPage() {
+  const crudPasswordForm = document.getElementById('crud-password-form');
+  if (crudPasswordForm) {
+    crudPasswordForm.addEventListener('submit', handleCrudPasswordSubmit);
+  }
+
+  if (!requireAdminAccess()) {
     showCrudPasswordPanel();
     return;
   }
 
   showCrudContent();
-  renderPatients();
-  renderStock();
-  renderAppointmentsPanel();
-  renderDoctorRequests();
-  renderMedicationRequests();
-  updateDoctorHistorySelect();
-  renderPatientHistory();
-
-  const submitBtn = document.querySelector('#patient-form button.primary');
-  if (submitBtn) {
-    submitBtn.textContent = 'Guardar paciente';
-  }
 
   const user = getSessionUser();
-  const crudUserName = document.getElementById('crud-user-name');
-  if (crudUserName && user) {
-    if (user.role === 'Doctor') {
-      const title = user.username.trim().toLowerCase().endsWith('a') ? 'Dra.' : 'Dr.';
-      crudUserName.textContent = `${title} ${user.username}`;
-    } else {
-      crudUserName.textContent = user.username;
-    }
+  const nameSpan = document.getElementById('crud-user-name');
+  if (nameSpan) {
+    nameSpan.textContent = user ? user.username : 'Doctor / Administrador';
+  }
+
+  const form = document.getElementById('patient-form');
+  const clearButton = document.getElementById('clear-form');
+  const historySelect = document.getElementById('history-patient-select');
+
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const idField = document.getElementById('patient-id');
+      const nombre = document.getElementById('patient-name').value.trim();
+      const especie = document.getElementById('patient-species').value.trim();
+      const edad = document.getElementById('patient-age').value.trim();
+      const dueno = document.getElementById('patient-owner').value.trim();
+      const estado = document.getElementById('patient-status').value;
+      const observacionesInput = document.getElementById('patient-observations');
+      const observaciones = observacionesInput ? observacionesInput.value.trim() : '';
+      const message = document.getElementById('form-message');
+
+      if (!nombre || !especie || !edad || !dueno || !estado) {
+        if (message) {
+          message.style.color = "red";
+          message.textContent = 'Todos los campos obligatorios deben ser completados.';
+        }
+        return;
+      }
+
+      const patients = getPatients();
+      const currentId = idField.value;
+      const patientData = { id: currentId || 'patient-' + Date.now(), nombre, especie, edad, dueno, estado, observaciones };
+
+      if (currentId) {
+        const index = patients.findIndex((item) => item.id === currentId);
+        if (index !== -1) patients[index] = patientData;
+      } else {
+        patients.push(patientData);
+      }
+
+      savePatients(patients);
+
+      // Sincronización automática de citas
+      const requests = getClientRequests();
+      const reqIndex = requests.findIndex((r) => r.patientId === patientData.id || (r.petName === nombre && r.user === dueno));
+      
+      const appointmentData = {
+        id: reqIndex !== -1 ? requests[reqIndex].id : 'service-' + Date.now(),
+        type: 'cita',
+        service: 'Cita médica',
+        petName: nombre,
+        patientId: patientData.id,
+        professional: 'Dr. Alejandro',
+        detail: observaciones || 'Revisión general en consulta.',
+        date: new Date().toISOString().split('T')[0],
+        user: dueno,
+        createdAt: reqIndex !== -1 ? requests[reqIndex].createdAt : new Date().toISOString(),
+        status: estado === 'Alta' ? 'Atendido' : (estado === 'Revisión' ? 'En revisión' : 'No atendido'),
+        hospitalized: estado === 'Revisión'
+      };
+
+      if (reqIndex !== -1) requests[reqIndex] = appointmentData;
+      else requests.push(appointmentData);
+      
+      saveClientRequests(requests);
+      initCrudPageData();
+      clearPatientForm();
+
+      if (message) {
+        message.style.color = "green";
+        message.textContent = 'Paciente y paneles inferiores sincronizados correctamente.';
+        setTimeout(() => { message.textContent = ''; }, 3000);
+      }
+      
+      const submitBtn = document.querySelector('#patient-form button.primary');
+      if (submitBtn) submitBtn.textContent = "Guardar paciente";
+    });
+  }
+
+  if (historySelect) historySelect.addEventListener('change', renderPatientHistory);
+
+  if (clearButton) {
+    clearButton.addEventListener('click', function () {
+      clearPatientForm();
+      const submitBtn = document.querySelector('#patient-form button.primary');
+      if (submitBtn) submitBtn.textContent = "Guardar paciente";
+    });
+  }
+
+  const downloadReportButton = document.getElementById('download-report');
+  if (downloadReportButton) {
+    downloadReportButton.addEventListener('click', () => downloadDoctorReport(false));
+  }
+
+  const downloadAndClearButton = document.getElementById('download-and-clear-report');
+  if (downloadAndClearButton) {
+    downloadAndClearButton.addEventListener('click', () => downloadDoctorReport(true));
+  }
+
+  const addStockButton = document.getElementById('add-stock-item');
+  if (addStockButton) {
+    addStockButton.addEventListener('click', addNewStockItem);
+  }
+
+  initCrudPageData();
+}
+
+// ==========================================
+// 9. CONFIGURACIÓN EXCLUSIVA DE LOS BOTONES DE INICIO (INDEX.HTML)
+// ==========================================
+function setupHomeButtons() {
+  const serviceBtn = document.getElementById('home-service-btn');
+  const loginBtn = document.getElementById('home-login-btn');
+  const crudBtn = document.getElementById('home-crud-btn');
+
+  if (serviceBtn) {
+    serviceBtn.addEventListener('click', () => { window.location.href = 'servicio.html'; });
+  }
+  
+  if (loginBtn) {
+    loginBtn.addEventListener('click', handleHomeAccountAccess);
+  }
+
+  if (crudBtn) {
+    crudBtn.addEventListener('click', () => { window.location.href = 'crud.html'; });
   }
 }
 
-// Inicialización: vincula formularios, botones y paneles cuando la página carga
+function handleHomeAccountAccess() {
+  const user = getSessionUser();
+  if (!user) {
+    window.location.href = 'login.html';
+    return;
+  }
+  renderHomeAccountPanel(user);
+}
+
+function renderHomeAccountPanel(user) {
+  const accountPanel = document.getElementById('account-panel');
+  const homeActions = document.querySelector('.home-actions');
+  const ownerName = document.getElementById('account-owner-name');
+  const userRole = document.getElementById('account-user-role');
+  const petsList = document.getElementById('account-pets-list');
+  const totalAppointments = document.getElementById('account-total-appointments');
+  const totalServices = document.getElementById('account-total-services');
+  const totalMedications = document.getElementById('account-total-medications');
+  const lastRequest = document.getElementById('account-last-request');
+  const doctorDetails = document.getElementById('doctor-account-details');
+  const doctorAssignedCount = document.getElementById('doctor-total-assigned');
+  const doctorServiceCount = document.getElementById('doctor-total-services');
+  const doctorPendingCount = document.getElementById('doctor-pending-count');
+  const doctorTableBody = document.getElementById('doctor-account-table-body');
+  const clientLastRequestRow = document.getElementById('client-account-last-request-row');
+
+  if (ownerName) ownerName.textContent = user.username || '-';
+  if (userRole) userRole.textContent = user.role || '-';
+
+  if (user.role === 'Doctor') {
+    const doctorRequests = getClientRequests().filter((req) => req.type === 'cita' || req.type === 'servicio');
+    const pendingRequests = doctorRequests.filter((req) => req.status === 'No atendido' || req.status === 'En revisión');
+    const latestRequest = doctorRequests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+    if (totalAppointments) totalAppointments.textContent = doctorRequests.filter((req) => req.type === 'cita').length;
+    if (totalServices) totalServices.textContent = doctorRequests.filter((req) => req.type === 'servicio').length;
+    if (totalMedications) totalMedications.textContent = 0;
+    if (petsList) {
+      petsList.innerHTML = '<li>No aplica para perfil de doctor</li>';
+    }
+    if (lastRequest) lastRequest.textContent = latestRequest ? `${latestRequest.service || latestRequest.type} - ${latestRequest.date || 'sin fecha'}` : 'Sin solicitudes recientes';
+    if (clientLastRequestRow) clientLastRequestRow.style.display = 'block';
+    if (doctorDetails) {
+      doctorDetails.classList.remove('hidden');
+      if (doctorAssignedCount) doctorAssignedCount.textContent = doctorRequests.length;
+      if (doctorServiceCount) doctorServiceCount.textContent = doctorRequests.filter((req) => req.type === 'servicio').length;
+      if (doctorPendingCount) doctorPendingCount.textContent = pendingRequests.length;
+      if (doctorTableBody) {
+        doctorTableBody.innerHTML = doctorRequests.length
+          ? doctorRequests.map((req) => `
+              <tr>
+                <td><b>${req.petName || '-'}</b></td>
+                <td>${req.service || req.type}</td>
+                <td>${req.date || '-'}</td>
+                <td>${req.status || '-'}</td>
+              </tr>
+            `).join('')
+          : '<tr><td colspan="4">No hay citas o servicios asignados.</td></tr>';
+      }
+    }
+  } else {
+    const requests = getClientRequests().filter((req) => req.user === user.username);
+    const appointmentRequests = requests.filter((req) => req.type === 'cita');
+    const serviceRequests = requests.filter((req) => req.type === 'servicio' || req.service === 'Peluquería' || req.service === 'Medicina' || req.service === 'Radiografías' || req.service === 'Guardería canina' || req.service === 'Ecografías' || req.service === 'Adopción');
+    const medicationRequests = requests.filter((req) => req.type === 'medicamento');
+    const petNames = [...new Set(requests.map((req) => req.petName).filter(Boolean))];
+    const latestRequest = requests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+    if (totalAppointments) totalAppointments.textContent = appointmentRequests.length;
+    if (totalServices) totalServices.textContent = serviceRequests.length;
+    if (totalMedications) totalMedications.textContent = medicationRequests.length;
+    if (petsList) {
+      petsList.innerHTML = petNames.length ? petNames.map((name) => `<li>${name}</li>`).join('') : '<li>No hay mascotas registradas</li>';
+    }
+    if (lastRequest) lastRequest.textContent = latestRequest ? `${latestRequest.service || latestRequest.type} - ${latestRequest.date || 'sin fecha'}` : 'Sin solicitudes recientes';
+    if (doctorDetails) doctorDetails.classList.add('hidden');
+  }
+
+  if (accountPanel) {
+    accountPanel.classList.remove('hidden');
+    accountPanel.scrollIntoView({ behavior: 'smooth' });
+  }
+  if (homeActions) {
+    homeActions.classList.add('hidden');
+  }
+
+  const closeBtn = document.getElementById('account-close-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (accountPanel) accountPanel.classList.add('hidden');
+      if (homeActions) homeActions.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+}
+
+function setupLoginPage() {
+  const roleClient = document.getElementById('role-client');
+  const roleAdmin = document.getElementById('role-admin');
+  const roleSecretary = document.getElementById('role-secretary');
+  const roleDoctor = document.getElementById('role-doctor');
+  const roleRegister = document.getElementById('role-register');
+
+  if (roleClient) roleClient.addEventListener('click', () => showPanel('login-panel'));
+  if (roleAdmin) roleAdmin.addEventListener('click', () => showPanel('login-panel'));
+  if (roleSecretary) roleSecretary.addEventListener('click', () => showPanel('secretary-password-panel'));
+  if (roleDoctor) roleDoctor.addEventListener('click', () => showPanel('login-panel'));
+  if (roleRegister) roleRegister.addEventListener('click', () => showPanel('register-panel'));
+
+  const serviceButtons = [
+    ['show-appointment-form', 'Cita médica'],
+    ['service-peluqueria', 'Peluquería'],
+    ['service-radiografias', 'Radiografías'],
+    ['service-guarderia', 'Guardería canina'],
+    ['service-ecografias', 'Ecografías']
+  ];
+
+  serviceButtons.forEach(([id, service]) => {
+    const button = document.getElementById(id);
+    if (button) button.addEventListener('click', () => window.openServiceForm(service));
+  });
+
+  const adoptionButton = document.getElementById('show-adoption-panel');
+  if (adoptionButton) adoptionButton.addEventListener('click', () => showClientForm('adoption-panel'));
+
+  const medicationButton = document.getElementById('show-medication-form');
+  if (medicationButton) medicationButton.addEventListener('click', () => showClientForm('medication-form'));
+
+}
+
+// ==========================================
+// 10. INICIALIZADOR DE EVENTOS GLOBALES
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   ensureDefaultUsers();
-  ensureDefaultStock();
   updateNav();
+
+  const pageType = document.body.getAttribute('data-page');
+  const sessionUser = getSessionUser();
+  
+  if (sessionUser && pageType === 'login') {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  // Ejecutar configuraciones según la página actual de manera aislada y segura
+  if (pageType === 'crud') {
+    initCrudPage();
+  } else if (pageType === 'home') {
+    setupHomeButtons();
+  } else if (pageType === 'login') {
+    setupLoginPage();
+  }
+
+  const registerForm = document.getElementById('register-form');
+  if (registerForm) registerForm.addEventListener('submit', handleRegister);
+
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) loginForm.addEventListener('submit', handleLogin);
+
+  const secretaryForm = document.getElementById('secretary-password-form');
+  if (secretaryForm) secretaryForm.addEventListener('submit', handleSecretaryPasswordSubmit);
+
+  const doctorForm = document.getElementById('doctor-password-form');
+  if (doctorForm) doctorForm.addEventListener('submit', handleDoctorPasswordSubmit);
+
+  const serviceForm = document.getElementById('service-form') || document.getElementById('service-booking-form');
+  if (serviceForm) serviceForm.addEventListener('submit', handleServiceRequest);
+
+  const adoptionForm = document.getElementById('adoption-form');
+  if (adoptionForm) adoptionForm.addEventListener('submit', handleAdoptionRequest);
+
+  const doctorPetSelect = document.getElementById('doctor-pet-select');
+  if (doctorPetSelect) doctorPetSelect.addEventListener('change', renderDoctorHistory);
+
+  const medicationForm = document.getElementById('medication-form');
+  if (medicationForm) medicationForm.addEventListener('submit', handleMedicationRequest);
 
   function addCloseButtonsToPanels() {
     document.querySelectorAll('.access-panel').forEach((panel) => {
@@ -1242,114 +1434,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   addCloseButtonsToPanels();
 
-  const loginForm = document.getElementById('login-form');
-  if (loginForm) loginForm.addEventListener('submit', handleLogin);
-  const registerForm = document.getElementById('register-form');
-  if (registerForm) registerForm.addEventListener('submit', handleRegister);
-  const secretaryForm = document.getElementById('secretary-password-form');
-  if (secretaryForm) secretaryForm.addEventListener('submit', handleSecretaryPasswordSubmit);
-  const doctorForm = document.getElementById('doctor-password-form');
-  if (doctorForm) doctorForm.addEventListener('submit', handleDoctorPasswordSubmit);
-  const crudPasswordForm = document.getElementById('crud-password-form');
-  if (crudPasswordForm) crudPasswordForm.addEventListener('submit', handleCrudPasswordSubmit);
-
-  const serviceForm = document.getElementById('service-booking-form') || document.getElementById('service-form');
-  if (serviceForm) serviceForm.addEventListener('submit', handleServiceRequest);
-
-  const patientForm = document.getElementById('patient-form');
-  if (patientForm) patientForm.addEventListener('submit', handlePatientFormSubmit);
-
-  const clearPatientBtn = document.getElementById('clear-form');
-  if (clearPatientBtn) clearPatientBtn.addEventListener('click', clearPatientForm);
-
-  const historyPatientSelect = document.getElementById('history-patient-select');
-  if (historyPatientSelect) historyPatientSelect.addEventListener('change', renderPatientHistory);
-
-  const doctorPetSelect = document.getElementById('doctor-pet-select');
-  if (doctorPetSelect) doctorPetSelect.addEventListener('change', renderDoctorHistory);
-
-  const addStockBtn = document.getElementById('add-stock-item');
-  if (addStockBtn) addStockBtn.addEventListener('click', addNewStockItem);
-
-  const downloadReportBtn = document.getElementById('download-report');
-  if (downloadReportBtn) downloadReportBtn.addEventListener('click', downloadReport);
-
-  const downloadAndClearBtn = document.getElementById('download-and-clear-report');
-  if (downloadAndClearBtn) downloadAndClearBtn.addEventListener('click', downloadAndClearReport);
-
-  const pageName = document.body ? document.body.dataset.page : '';
-  if (pageName === 'crud' && hasCrudAccess()) {
-    showCrudContent();
-    initCrudPageData();
-    const crudUserName = document.getElementById('crud-user-name');
-    const user = getSessionUser();
-    if (crudUserName && user) {
-      if (user.role === 'Doctor') {
-        const title = user.username.trim().toLowerCase().endsWith('a') ? 'Dra.' : 'Dr.';
-        crudUserName.textContent = `${title} ${user.username}`;
-      } else {
-        crudUserName.textContent = user.username;
-      }
-    }
-  }
-
-  // Role cards
-  const roleClient = document.getElementById('role-client');
-  if (roleClient) roleClient.addEventListener('click', () => showPanel('login-panel'));
-  const roleRegister = document.getElementById('role-register');
-  if (roleRegister) roleRegister.addEventListener('click', () => showPanel('register-panel'));
-  const roleSecretary = document.getElementById('role-secretary');
-  if (roleSecretary) roleSecretary.addEventListener('click', () => showPanel('secretary-password-panel'));
-  const roleDoctor = document.getElementById('role-doctor');
-  if (roleDoctor) roleDoctor.addEventListener('click', () => showPanel('doctor-password-panel'));
-  const roleAdmin = document.getElementById('role-admin');
-  if (roleAdmin) roleAdmin.addEventListener('click', () => showCrudPasswordPanel());
-
-  // Botones de la página principal
-  const homeLoginBtn = document.getElementById('home-login-btn');
-  if (homeLoginBtn) {
-    homeLoginBtn.addEventListener('click', () => {
-      const user = getSessionUser();
-      if (user) {
-        showPanel('account-panel');
-        populateAccountPanel();
-      } else {
-        window.location.href = 'login.html';
-      }
-    });
-  }
-
-  const homeServiceBtn = document.getElementById('home-service-btn');
-  if (homeServiceBtn) {
-    homeServiceBtn.addEventListener('click', () => {
-      window.location.href = 'servicio.html';
-    });
-  }
-
-  const accountCloseBtn = document.getElementById('account-close-btn');
-  if (accountCloseBtn) {
-    accountCloseBtn.addEventListener('click', () => {
-      const panel = document.getElementById('account-panel');
-      if (panel) {
-        panel.classList.add('hidden');
-        panel.style.display = 'none';
-      }
-    });
-  }
-
   // Vinculación de botones de agendar en servicio.html
   const scheduleButtons = document.querySelectorAll('.schedule-service-btn');
   scheduleButtons.forEach(btn => {
     btn.addEventListener('click', function() {
       const serviceName = this.getAttribute('data-service');
-      if (typeof window.openServiceForm === 'function') {
+      if(typeof window.openServiceForm === 'function') {
         window.openServiceForm(serviceName);
       }
     });
   });
 
+  const serviceCards = document.querySelectorAll('.card-flip');
+  serviceCards.forEach((card) => {
+    card.addEventListener('click', (event) => {
+      if (event.target.closest('.schedule-service-btn')) return;
+      card.classList.toggle('flipped');
+    });
+  });
+
+  // Botón Cancelar del modal de servicios
   const cancelServiceBtn = document.getElementById('service-cancel');
-  if (cancelServiceBtn) cancelServiceBtn.addEventListener('click', clearClientForms);
+  if (cancelServiceBtn) {
+    cancelServiceBtn.addEventListener('click', clearClientForms);
+  }
+
   const closeServiceBtn = document.getElementById('service-modal-close');
-  if (closeServiceBtn) closeServiceBtn.addEventListener('click', clearClientForms);
+  if (closeServiceBtn) {
+    closeServiceBtn.addEventListener('click', clearClientForms);
+  }
 });

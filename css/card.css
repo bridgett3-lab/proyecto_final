@@ -146,3 +146,19 @@
     left: 0;
     background: rgba(0, 0, 0, 0.5);
 }
+
+@media screen and (max-width: 600px) {
+    .content-card {
+        justify-content: center;
+    }
+
+    .card {
+        width: calc(100vw - 40px);
+        max-width: 280px;
+        height: 360px;
+    }
+
+    .card-flip {
+        margin: 10px auto;
+    }
+}
